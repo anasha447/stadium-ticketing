@@ -1,0 +1,37 @@
+# ── Build output ─────────────────────────────────────────────
+target/
+*.class
+*.log
+HELP.md
+.mvn/wrapper/maven-wrapper.jar
+
+# ── IDEs ─────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.sts4-cache/
+
+# ── Frontend (from Sprint 7) ─────────────────────────────────
+node_modules/
+.next/
+out/
+
+# ── Secrets / local environment ──────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Claude Code local state (skills and CLAUDE.md stay tracked) ─
+.claude/worktrees/
+.claude/settings.local.json
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,23 @@
+# Normalise every text file to LF in the repo and in the working tree.
+# This file overrides each developer's core.autocrlf, so the whole team gets the same bytes.
+* text=auto eol=lf
+
+# Must be LF: they run inside Linux containers / Redis and break on CRLF
+*.sh    text eol=lf
+*.lua   text eol=lf
+mvnw    text eol=lf
+
+# Windows-only scripts keep CRLF
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Binary — never touch line endings or diff as text
+*.jar   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
