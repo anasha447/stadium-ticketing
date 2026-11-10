@@ -49,7 +49,7 @@ for every ticket. Process rules: [`docs/scrum/WORKFLOW.md`](docs/scrum/WORKFLOW.
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/scrum/sprints/SPRINT-01.md`](docs/scrum/sprints/SPRINT-01.md)
-- **Active ticket:** TKT-100 — Verify repository baseline (next: TKT-101)
+- **Active ticket:** TKT-101 — Root POM + `inventory` from Initializr + Docker Compose (TKT-100 done)
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027; stretch: late Feb) — see ROADMAP
 - **Open decisions:** none (log in [`docs/architecture/REVIEW-FINDINGS.md`](docs/architecture/REVIEW-FINDINGS.md))
 
@@ -82,7 +82,7 @@ infra/k8s/                 manifests (from Sprint 13)
 docs/architecture/         ARCHITECTURE, DESIGN, DATA-MODEL, EVENTS, API, TESTING-STRATEGY, REVIEW-FINDINGS
 docs/adr/                  architecture decision records
 docs/scrum/                WORKFLOW, ROADMAP, BACKLOG, sprints/SPRINT-NN.md
-docs/learning/             TEACHING-LOOP, JOURNAL
+docs/learning/             TEACHING-LOOP, LEARNING-NOTES
 .claude/skills/            project skills
 ```
 

@@ -138,12 +138,12 @@ hypothesis? 4. What is the smallest experiment to test it? — then helps run it
    one "what if" (e.g. *"What if the sweeper runs on two pods without ShedLock?"*).
 2. **One interview question** as a backend interviewer would ask it; Anas answers in
    writing, then Claude gives a model answer to compare.
-3. **Journal entry** in `docs/learning/JOURNAL.md` written by Anas.
+3. **Learning notes** — add the ticket to `docs/learning/LEARNING-NOTES.md` (what I did, what I learned).
 4. Anas updates `CLAUDE.md` → Current status and ticks the ticket in the sprint file;
    `GLOSSARY.md` / `docs/` if needed (Claude reminds, Anas edits).
 5. Claude names the next ticket and the one concept to preview before it.
 
-**Exit check:** journal entry exists; questions answered; status updated.
+**Exit check:** learning notes updated; questions answered; status updated.
 
 ---
 
@@ -156,7 +156,7 @@ hypothesis? 4. What is the smallest experiment to test it? — then helps run it
   unit, TDD state (red / green / refactor), what's committed, next step. Anas pastes it
   into the sprint daily log.
 - Once a week: a 10-minute **spaced-repetition** round — 5 questions drawn from older
-  journal entries, weighted toward low-confidence concepts.
+  learning-notes sections, weighted toward the shakiest concepts.
 
 ## Prompt to start any ticket
 

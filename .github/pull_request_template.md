@@ -24,7 +24,7 @@
 - [ ] I can explain every annotation in this diff
 - [ ] Glossary words used; `GLOSSARY.md` updated if a new term appeared
 - [ ] Docs updated (DATA-MODEL / API / EVENTS / ADR) where relevant
-- [ ] Journal entry written
+- [ ] Learning notes updated (`docs/learning/LEARNING-NOTES.md`)
 - [ ] Conventional Commits
 
 ### Open questions for the reviewer

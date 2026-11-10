@@ -149,7 +149,7 @@ Pin image versions — no `latest`.
 - [ ] `docker compose up -d` → both containers report `healthy`
 - [ ] With Compose running, `inventory` started locally answers `GET localhost:8081/actuator/health` → `UP` with `db` and `redis`
 - [ ] `ActuatorHealthIT` was seen red, now green
-- [ ] With Postgres stopped, `inventory` fails at startup with a datasource error — observe it once, write what you saw in the journal
+- [ ] With Postgres stopped, `inventory` fails at startup with a datasource error — observe it once, write what you saw in the learning notes
 - [ ] The **Commands** section in `CLAUDE.md` is filled in
 
 **Technical notes**

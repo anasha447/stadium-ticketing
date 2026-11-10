@@ -64,7 +64,7 @@ Only **one** ticket is In Progress at a time.
 - [ ] GitHub PR opened with the template, reviewed by Claude, all 🔴 Blocking comments fixed
 - [ ] `GLOSSARY.md` updated if a new term appeared
 - [ ] Relevant `docs/` updated (DATA-MODEL, API, EVENTS, ADR)
-- [ ] Journal entry written (`docs/learning/JOURNAL.md`)
+- [ ] Learning notes updated (`docs/learning/LEARNING-NOTES.md`)
 - [ ] `CLAUDE.md` "Current status" updated
 
 ## 4. Estimation
