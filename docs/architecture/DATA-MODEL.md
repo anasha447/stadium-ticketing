@@ -137,4 +137,4 @@ booking_opens_at, status, importance, print_allowed), `standings`,
 - **redis-gateway:** `waitroom:{m}:registrants` (set), `waitroom:{m}:queue` (zset),
   rate-limit buckets. Detailed in Sprint 6.
 - **redis-cache:** catalog read models, TTL + stale-while-revalidate.
-- **Neo4j:** fraud graph (Sprint 16). **MinIO:** ticket documents (Sprint 15).
+- ⭐ Stretch: **Neo4j** (fraud graph) and **MinIO** (ticket documents).

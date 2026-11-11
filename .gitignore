@@ -35,3 +35,6 @@ out/
 # ── OS ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# Generated learning site (rebuild: node docs/learning/build.mjs)
+docs/learning/index.html

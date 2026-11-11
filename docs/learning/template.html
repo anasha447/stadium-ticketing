@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stadium Learning Notes</title>
+<style>
+:root {
+  --bg: #f4f6fb; --surface: #ffffff; --surface-2: #eaeef7; --text: #141c2e; --muted: #5b6680;
+  --brand: #14213d; --head: #14213d; --accent: #e8770e; --link: #c45f00; --border: #d6dcea;
+  --code-bg: #0e1628; --code-text: #e7ecf7; --on-brand: #ffffff;
+  --ok: #1f8a5b; --warn: #e8770e; --info: #3d5a99;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1020; --surface: #111a2e; --surface-2: #18233b; --text: #e6ebf5; --muted: #9aa6c0;
+    --brand: #0e1730; --head: #ffb066; --accent: #ff9b3d; --link: #ffb066; --border: #24304a;
+    --code-bg: #070c18; --code-text: #e7ecf7; --on-brand: #ffffff; --ok: #4cc38a; --info: #8aa4e0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1020; --surface: #111a2e; --surface-2: #18233b; --text: #e6ebf5; --muted: #9aa6c0;
+  --brand: #0e1730; --head: #ffb066; --accent: #ff9b3d; --link: #ffb066; --border: #24304a;
+  --code-bg: #070c18; --code-text: #e7ecf7; --on-brand: #ffffff; --ok: #4cc38a; --info: #8aa4e0;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--link); }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .9em; background: var(--surface-2); padding: .1em .35em; border-radius: 5px; }
+
+.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+  background: var(--brand); color: var(--on-brand); border-bottom: 3px solid var(--accent); }
+.brand { font-weight: 700; letter-spacing: .2px; white-space: nowrap; }
+.tabs { display: flex; gap: 4px; }
+.tab { background: transparent; border: 0; color: inherit; opacity: .75; font: inherit; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.tab[aria-selected="true"] { opacity: 1; background: var(--accent); color: #fff; font-weight: 600; }
+.search { margin-left: auto; position: relative; }
+.search input { width: 260px; max-width: 42vw; padding: 7px 12px; border-radius: 8px; border: 0; font: inherit; }
+.results { position: absolute; right: 0; top: 42px; width: min(440px, 92vw); max-height: 60vh; overflow: auto; background: var(--surface);
+  color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.results a { display: block; padding: 10px 14px; text-decoration: none; color: var(--text); border-bottom: 1px solid var(--border); }
+.results a:hover { background: var(--surface-2); }
+.results small { color: var(--muted); display: block; }
+.theme { background: transparent; border: 1px solid rgba(255,255,255,.35); color: inherit; border-radius: 8px; padding: 5px 10px; cursor: pointer; font: inherit; }
+
+.layout { display: grid; grid-template-columns: 270px 1fr; max-width: 1240px; margin: 0 auto; gap: 28px; padding: 24px 20px 80px; }
+.layout.wide { grid-template-columns: 1fr; max-width: 1000px; }
+nav.side[hidden] { display: none; }
+nav.side { position: sticky; top: 76px; align-self: start; max-height: calc(100vh - 96px); overflow: auto; }
+.side h3 { margin: 18px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.side a { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px;
+  color: var(--text); text-decoration: none; font-size: 15px; }
+.side a:hover { background: var(--surface-2); }
+.side a.active { background: var(--surface); box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--border); font-weight: 600; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--info); }
+.dot.done { background: var(--ok); } .dot.in-progress { background: var(--accent); } .dot.planned { background: var(--border); }
+
+main { min-width: 0; }
+.panel[hidden] { display: none; }
+.lesson, .notes, .concepts { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 40px; }
+.lesson-head { border-bottom: 1px solid var(--border); margin-bottom: 8px; padding-bottom: 16px; }
+.eyebrow { margin: 0; color: var(--muted); font-size: 14px; }
+.lesson h1 { margin: 4px 0 10px; font-size: 30px; line-height: 1.25; color: var(--head); }
+.pill { display: inline-block; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--info); }
+.pill.done { color: var(--ok); } .pill.in-progress { color: var(--accent); } .pill.planned { color: var(--muted); }
+.lesson h2 { margin: 34px 0 10px; font-size: 22px; color: var(--head); }
+.lesson h2::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); margin-right: 10px; vertical-align: middle; }
+.lesson h3 { margin: 26px 0 6px; font-size: 18px; }
+.lesson h4 { margin: 18px 0 4px; font-size: 16px; color: var(--muted); }
+.lesson p, .lesson li { max-width: 78ch; }
+.table { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--surface-2); font-weight: 600; }
+blockquote { margin: 14px 0; padding: 10px 16px; background: var(--surface-2); border-radius: 10px; }
+blockquote p { margin: 4px 0; }
+details { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; background: var(--surface-2); }
+details[open] { background: var(--surface); }
+summary { cursor: pointer; font-weight: 600; }
+.code { position: relative; margin: 14px 0; }
+.code pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 16px; border-radius: 10px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
+.code pre code { background: none; padding: 0; color: inherit; }
+.code .lang { position: absolute; left: 12px; top: -10px; font-size: 11px; background: var(--accent); color: #fff; padding: 1px 8px; border-radius: 6px; }
+.copy { position: absolute; right: 10px; top: 10px; font: 12px system-ui; border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  background: rgba(255,255,255,.14); color: var(--code-text); }
+.copy:hover { background: rgba(255,255,255,.26); }
+hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
+.sprint-summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; }
+.stat b { display: block; font-size: 22px; color: var(--head); }
+.stat span { color: var(--muted); font-size: 13px; }
+details.sprint { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 0; margin: 0 0 14px; }
+details.sprint > summary { list-style: none; padding: 16px 20px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
+details.sprint > summary::-webkit-details-marker { display: none; }
+details.sprint[open] > summary { border-bottom: 1px solid var(--border); }
+.sprint-title { font-size: 18px; color: var(--head); }
+.sprint-title .num { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--brand); color: var(--on-brand); margin-right: 10px; font-size: 14px; }
+.sprint.current .sprint-title .num { background: var(--accent); }
+.sprint-meta { color: var(--muted); font-size: 14px; text-align: right; }
+.sprint-goal { grid-column: 1 / -1; color: var(--muted); font-weight: 400; font-size: 15px; }
+.badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #fff; margin-left: 8px; vertical-align: 2px; }
+.badge.soft { background: var(--surface-2); color: var(--muted); }
+.tickets { padding: 6px 12px 12px; }
+.ticket-row { display: grid; grid-template-columns: 92px 1fr auto auto 14px; gap: 12px; align-items: center; padding: 10px 8px; }
+.ticket-row .id { font-family: ui-monospace, Consolas, monospace; font-weight: 700; color: var(--link); font-size: 14px; }
+.ticket-row .pts { color: var(--muted); font-size: 13px; white-space: nowrap; }
+div.ticket { border-bottom: 1px solid var(--border); }
+details.ticket { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; margin: 0; padding: 0; }
+details.ticket:last-child, div.ticket:last-child { border-bottom: 0; }
+details.ticket > summary { list-style: none; cursor: pointer; font-weight: 400; }
+details.ticket > summary::-webkit-details-marker { display: none; }
+details.ticket > summary .ticket-row::after { content: "▸"; color: var(--muted); }
+details.ticket[open] > summary .ticket-row::after { content: "▾"; }
+.ticket-row .t { font-weight: 600; }
+.ticket-body { padding: 4px 16px 16px 112px; }
+.ticket-body p, .ticket-body li { max-width: 78ch; }
+.ticket-body h3, .ticket-body h4 { color: var(--head); }
+.lesson-link { font-size: 13px; font-weight: 600; }
+.quiz { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 14px 0; background: var(--surface); }
+.quiz-q { margin: 0 0 10px; font-weight: 600; }
+.quiz-opts { display: grid; gap: 8px; }
+.quiz-opt { text-align: left; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; cursor: pointer; }
+.quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.quiz-opt:disabled { cursor: default; }
+.quiz-opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--surface)); }
+.quiz-opt.wrong { border-color: #d64545; background: color-mix(in srgb, #d64545 12%, var(--surface)); }
+.quiz-why { margin: 10px 0 0; color: var(--muted); }
+.quiz-from { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+.review, .notes { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 40px; }
+.review h2 { color: var(--head); margin-top: 0; }
+.review-meta { color: var(--muted); font-size: 14px; }
+.btn { font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 9px; padding: 9px 16px; cursor: pointer; }
+.concepts ul { columns: 2; column-gap: 32px; padding-left: 18px; }
+.concepts li { break-inside: avoid; margin-bottom: 6px; }
+.concepts small { color: var(--muted); }
+.empty { color: var(--muted); }
+.foot { color: var(--muted); font-size: 13px; margin-top: 18px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; padding: 16px; }
+  nav.side { position: static; max-height: none; }
+  .lesson, .notes, .concepts, .review { padding: 22px 18px; }
+  .top { flex-wrap: wrap; padding: 10px 16px; }
+  .tabs { order: 3; width: 100%; overflow-x: auto; }
+  .tab { flex: none; }
+  .search { margin-left: 0; width: 100%; }
+  .search input { width: 100%; max-width: none; }
+  .concepts ul { columns: 1; }
+  .ticket-row, div.ticket .ticket-row { grid-template-columns: 76px 1fr auto 14px; }
+  .ticket-row .pill { display: none; }
+  .ticket-body { padding: 4px 8px 14px; }
+  details.sprint > summary { grid-template-columns: 1fr; }
+  .sprint-meta { text-align: left; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">⚽ Stadium · Learning Notes</span>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="lessons" aria-selected="true">Lessons</button>
+    <button class="tab" role="tab" data-tab="sprints" aria-selected="false">Sprints</button>
+    <button class="tab" role="tab" data-tab="concepts" aria-selected="false">Concepts</button>
+    <button class="tab" role="tab" data-tab="review" aria-selected="false">Review</button>
+    <button class="tab" role="tab" data-tab="notes" aria-selected="false">My notes</button>
+  </div>
+  <div class="search">
+    <input id="q" type="search" placeholder="Search lessons, tickets, concepts…" autocomplete="off" aria-label="Search">
+    <div class="results" id="results" hidden></div>
+  </div>
+  <button class="theme" id="theme" type="button" title="Toggle light/dark">◐</button>
+</header>
+
+<div class="layout">
+  <nav class="side" id="side" aria-label="Lessons"></nav>
+  <main>
+    <section class="panel" data-panel="lessons">
+<!--__ARTICLES__-->
+      <p class="empty" id="no-lessons" hidden>No lessons yet — the first one is written at the next ticket kickoff.</p>
+    </section>
+    <section class="panel sprints" data-panel="sprints" hidden>
+<!--__SPRINTS__-->
+    </section>
+    <section class="panel concepts" data-panel="concepts" hidden>
+      <h2>Concept index</h2>
+      <p class="empty">Every "Under the hood" topic from every lesson, A–Z.</p>
+      <ul id="concept-list"></ul>
+    </section>
+    <section class="panel review" data-panel="review" hidden>
+      <h2>Review</h2>
+      <p class="empty">A mixed round of questions from every lesson so far. Answer from memory first — the effort is what makes it stick. Best done once a week.</p>
+      <p class="review-meta" id="review-meta"></p>
+      <div id="review-round"></div>
+      <p class="review-actions"><button type="button" class="btn" id="review-new">New round</button> <span id="review-score"></span></p>
+    </section>
+    <section class="panel notes" data-panel="notes" hidden>
+<!--__NOTES__-->
+    </section>
+    <p class="foot" id="built"></p>
+  </main>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+// theme
+const savedTheme = store.get("theme");
+if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+$("#theme").onclick = () => {
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  store.set("theme", document.documentElement.dataset.theme);
+};
+
+// sidebar
+const bySprint = {};
+DATA.lessons.forEach(l => (bySprint[l.sprint] ||= []).push(l));
+$("#side").innerHTML = Object.keys(bySprint).sort((a, b) => a - b).map(s =>
+  `<h3>Sprint ${s}</h3>` + bySprint[s].map(l =>
+    `<a href="#${l.id}" data-id="${l.id}"><span>${l.id} · ${l.title}</span><span class="dot ${l.status}" title="${l.status}"></span></a>`).join("")
+).join("") || "<p class='empty'>No lessons yet.</p>";
+$("#no-lessons").hidden = DATA.lessons.length > 0;
+
+// concepts
+const concepts = DATA.lessons.flatMap(l => l.concepts.map(c => ({ ...c, id: l.id })))
+  .sort((a, b) => a.name.localeCompare(b.name));
+$("#concept-list").innerHTML = concepts.map(c =>
+  `<li><a href="#${c.id}/${c.anchor}">${c.name}</a> <small>${c.id}</small></li>`).join("") || "<li class='empty'>None yet.</li>";
+
+// tabs
+function showTab(name) {
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
+  $$(".panel").forEach(p => p.hidden = p.dataset.panel !== name);
+  $("#side").hidden = name !== "lessons";
+  document.querySelector(".layout").classList.toggle("wide", name !== "lessons");
+}
+const setHash = h => { try { history.replaceState(null, "", "#" + h); } catch {} };
+$$(".tab").forEach(t => t.onclick = () => {
+  if (t.dataset.tab === "lessons") { setHash(store.get("last") || ""); route(store.get("last") || ""); }
+  else { if (t.dataset.tab === "sprints") setHash("sprints"); showTab(t.dataset.tab); }
+});
+
+// routing: #TKT-101 or #TKT-101/anchor
+function route(hash) {
+  const [id, anchor] = decodeURIComponent(typeof hash === "string" ? hash : location.hash.slice(1)).split("/");
+  if (id === "sprints") {
+    showTab("sprints");
+    const el = anchor && document.getElementById("ticket-" + anchor);
+    if (el) { if (el.tagName === "DETAILS") el.open = true; el.closest("details.sprint").open = true; el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    return;
+  }
+  const fallback = DATA.lessons.find(l => l.status === "in-progress") || DATA.lessons[DATA.lessons.length - 1];
+  const target = DATA.lessons.find(l => l.id === id) || fallback;
+  if (!target) return;
+  showTab("lessons");
+  $$(".lesson").forEach(a => a.hidden = a.dataset.id !== target.id);
+  $$(".side a").forEach(a => a.classList.toggle("active", a.dataset.id === target.id));
+  const el = anchor && document.getElementById(anchor);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); else window.scrollTo(0, 0);
+  store.set("last", target.id);
+}
+window.addEventListener("hashchange", () => route());
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a) return;
+  e.preventDefault(); const h = a.getAttribute("href").slice(1); setHash(h); route(h);
+});
+if (!location.hash && store.get("last")) location.hash = store.get("last"); else route();
+
+// copy buttons
+document.addEventListener("click", e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  const text = b.parentElement.querySelector("code").innerText;
+  const done = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1400); };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  else fallbackCopy(text, done);
+});
+function fallbackCopy(text, done) {
+  const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+  try { document.execCommand("copy"); done(); } catch {} t.remove();
+}
+
+// quizzes: instant feedback (lessons and review)
+function answer(btn) {
+  const box = btn.closest(".quiz"), ok = +box.dataset.answer;
+  box.querySelectorAll(".quiz-opt").forEach((b, i) => { b.disabled = true; if (i === ok) b.classList.add("right"); });
+  if (+btn.dataset.i !== ok) btn.classList.add("wrong");
+  box.querySelector(".quiz-why").hidden = false;
+  box.dataset.done = +btn.dataset.i === ok ? "right" : "wrong";
+  if (box.closest("#review-round")) scoreRound();
+}
+document.addEventListener("click", e => { const b = e.target.closest(".quiz-opt"); if (b && !b.disabled) answer(b); });
+
+// review: up to 8 questions, shuffled across lessons (interleaving)
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function newRound() {
+  const qs = shuffle(DATA.quizzes || []).slice(0, 8);
+  $("#review-round").innerHTML = qs.map(q => {
+    const order = shuffle(q.options.map((o, i) => i));
+    return `<div class="quiz" data-answer="${order.indexOf(q.answer)}"><p class="quiz-from">${q.lesson}</p><p class="quiz-q">${q.question}</p><div class="quiz-opts">` +
+      order.map((i, k) => `<button type="button" class="quiz-opt" data-i="${k}">${q.options[i]}</button>`).join("") +
+      `</div><p class="quiz-why" hidden>${q.why}</p></div>`;
+  }).join("") || "<p class='empty'>No questions yet — they appear as lessons are written.</p>";
+  $("#review-score").textContent = "";
+  const last = store.get("lastReview");
+  $("#review-meta").textContent = `${(DATA.quizzes || []).length} questions in the bank` + (last ? ` · last round finished ${last}` : "");
+}
+function scoreRound() {
+  const boxes = $$("#review-round .quiz"), done = boxes.filter(b => b.dataset.done);
+  const right = done.filter(b => b.dataset.done === "right").length;
+  $("#review-score").textContent = `${right} / ${done.length} right` + (done.length === boxes.length ? " — round complete" : "");
+  if (done.length === boxes.length) store.set("lastReview", new Date().toISOString().slice(0, 10));
+}
+$("#review-new").onclick = newRound;
+newRound();
+
+// search
+const q = $("#q"), results = $("#results");
+q.addEventListener("input", () => {
+  const term = q.value.trim().toLowerCase();
+  if (term.length < 2) { results.hidden = true; return; }
+  const hits = [];
+  concepts.filter(c => c.name.toLowerCase().includes(term)).forEach(c =>
+    hits.push(`<a href="#${c.id}/${c.anchor}">${c.name}<small>Concept · ${c.id}</small></a>`));
+  (DATA.tickets || []).filter(t => (t.id + " " + t.title).toLowerCase().includes(term)).forEach(t =>
+    hits.push(`<a href="#sprints/${t.id}">${t.id} — ${t.title}<small>Ticket · ${t.sprint}</small></a>`));
+  DATA.lessons.forEach(l => {
+    const i = l.text.toLowerCase().indexOf(term);
+    if (i >= 0 || l.title.toLowerCase().includes(term)) {
+      const snip = i >= 0 ? l.text.slice(Math.max(0, i - 40), i + 80).replace(/[#*`|<>]/g, "") : "";
+      hits.push(`<a href="#${l.id}">${l.id} — ${l.title}<small>…${snip}…</small></a>`);
+    }
+  });
+  results.innerHTML = hits.join("") || "<a>No matches</a>";
+  results.hidden = false;
+});
+results.addEventListener("click", () => { results.hidden = true; q.value = ""; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") results.hidden = true; if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); } });
+
+$("#built").textContent = `Built ${DATA.built} · rebuild with: node docs/learning/build.mjs`;
+</script>
+</body>
+</html>

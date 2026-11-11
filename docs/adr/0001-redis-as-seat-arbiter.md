@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-09
-- **Ticket:** TKT-105, TKT-202
+- **Ticket:** TKT-106, TKT-202
 
 ## Context
 Up to 50,000 Fans compete for 5000 seats in minutes. A Fan may hold up to 4 seats,

@@ -1,8 +1,9 @@
 # Design — How Each Problem Is Solved
 
-The six problems that drive the design, the product rules, and the four advanced
-capabilities. Corrections from the review are marked **(RF-xx)** and explained in
-[REVIEW-FINDINGS.md](REVIEW-FINDINGS.md). Key names follow [DATA-MODEL.md](DATA-MODEL.md).
+The six problems that drive the design, the product rules, and the advanced
+capabilities. Tags **(RF-xx)** mark fixes from the 2026-11-09 architecture review (the
+full review is in git history). Key names follow [DATA-MODEL.md](DATA-MODEL.md).
+Sections marked **⭐ Stretch** are beyond the M3 finish line (see ROADMAP).
 
 | § | Problem | Core mechanism |
 |---|---|---|
@@ -14,7 +15,8 @@ capabilities. Corrections from the review are marked **(RF-xx)** and explained i
 | 5b | QR copying | Rotating Credential, device binding, first-scan-wins |
 | 6 | Adjacent seats | per-Block bitmaps, Run search, No-Orphan scorer |
 | 7 | Pricing | pure pricing module, immutable Quote |
-| A–D | Advanced | geometry, demand pricing, fraud graph, PDF tickets |
+| A | Advanced | seat geometry and the No-Orphan rule |
+| B–D | ⭐ Stretch | demand pricing, fraud graph, PDF tickets |
 
 ---
 
@@ -32,6 +34,13 @@ Four layers, outermost first:
      requires the grant, not the token. **(RF-07)**
    - 50,000 arrivals become a constant 200/s stream; 1250 buyers clear in minutes.
    - The Draw removes the bot advantage of being fastest at T-0.
+   - **Why a random Draw is fair.** Fairness here means *equal odds per person*, not
+     *reward for speed*. First-come-first-served looks fair but rewards whoever is
+     milliseconds faster: bots, data-centre connections, people with 20 tabs. The Draw
+     gives every Verified Identity that registered inside the Registration Window exactly
+     one entry and the same chance, so arriving at T-0 or T-23h makes no difference.
+     This is how Ticketmaster's Smart Queue and the UEFA/FIFA ticket ballots work.
+     A weighted Draw (members or loyal Fans first) is a possible extension (Icebox).
 2. **Read path never touches the write path.** Match lists, seat-map snapshots,
    standings, weather and scores come from Redis/CDN with stale-while-revalidate.
    Seat changes reach browsers as **deltas over SSE**, never polling.
@@ -116,15 +125,15 @@ The saga state is persisted (`saga_instances`) so a crashed pod resumes, not res
 
 Ranked by real effect:
 
-1. **Zero-margin Resale** through the platform at original price; listing rotates the
+1. **Zero-margin Resale** (⭐ Stretch) through the platform at original price; listing rotates the
    credential, killing copies in circulation. Scalping stops being profitable.
-2. **Purchase Limit on Verified Identity** (OTP phone), ledger keyed by
+2. **Purchase Limit on Verified Identity** (OTP phone; in this project a **fake OTP** — the code is printed by a console adapter, no SMS is sent), ledger keyed by
    `(verified_phone_hash, match_id)` with a DB `CHECK`. A 5th ticket costs a new SIM.
 3. **Draw instead of first-come-first-served** — 40 ms faster is worth nothing.
-4. **Turnstile / proof-of-work** at registration.
+4. **Turnstile / proof-of-work** at registration. ⭐ Stretch
 5. **Gateway rate limits** per identity, Device, ASN (sliding window). IP is a weak signal.
-6. **Bot Risk score** (fingerprint + behaviour) — advisory, adds friction, never hard-blocks.
-7. **Post-hoc Fraud Ring Detection** (capability C).
+6. **Bot Risk score** (fingerprint + behaviour) — advisory, adds friction, never hard-blocks. ⭐ Stretch
+7. **Post-hoc Fraud Ring Detection** (capability C). ⭐ Stretch
 
 The 4-seat cap is enforced in three independent places: pricing rejects >4, Lua rejects
 >4 across the Fan's live holds, and the Purchase Limit ledger across orders and accounts.
@@ -185,7 +194,7 @@ line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
    `orphanAllowed` is false, it skips to the next. Otherwise it holds atomically.
 3. All candidates gone → miss → Java re-scores (max 3 attempts) → 409.
 
-## B. Event-driven dynamic pricing (catalog topology → inventory, EP-4)
+## B. ⭐ Stretch — Event-driven dynamic pricing (catalog topology → inventory, EP-4)
 
 - Kafka Streams in `catalog` consumes `seat.held` + `hold.expired`, keyed by `matchId`,
   hopping window 60 s / advance 10 s → **Booking Velocity** → step function →
@@ -197,7 +206,7 @@ line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
 - **Guardrails (mandatory):** published cap ≤ 1.5×, Price Floor wins, surge before decay,
   no Quote or Order ever repriced. Recommended: surge on VIP only, disclosed in the UI.
 
-## C. Asynchronous Fraud Ring Detection (identity `riskgraph/`, EP-7)
+## C. ⭐ Stretch — Asynchronous Fraud Ring Detection (identity `riskgraph/`, EP-7)
 
 - Off the transactional path; consumes `order.confirmed`.
 - Graph: `(:Fan)`, `(:PaymentInstrument)`, `(:Device)`, `(:IpSubnet)`, `(:Order)`, `(:Match)`.
@@ -208,7 +217,7 @@ line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
 - **Human in the loop:** score → Admin review → auto-cancel only above high confidence
   and only before matchday. Cancellation reuses the Resale recycling path.
 
-## D. Downloadable PDF tickets (ticketing, EP-8)
+## D. ⭐ Stretch — Downloadable PDF tickets (ticketing, EP-8)
 
 A PDF is a static bearer token, so the rotating code never goes in it.
 
@@ -221,7 +230,7 @@ A PDF is a static bearer token, so the rotating code never goes in it.
   `ticket.document.ready` → API returns a short-lived pre-signed URL.
   Idempotent on `UNIQUE (ticket_id, credential_class)`.
 
-## Souvenir tickets
+## ⭐ Stretch — Souvenir tickets
 
 `match.finished{finalScore}` → `ticketing` projects every SOLD/USED Ticket into a
 **Souvenir** (final score, attendance, kickoff weather) and retires the credential.
