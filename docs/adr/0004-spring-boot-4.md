@@ -35,13 +35,13 @@ Use this table when a tutorial "doesn't work".
 |---|---|---|---|
 | Web starter | `spring-boot-starter-web` | `spring-boot-starter-webmvc` (Initializr's "Spring Web" picks the right one) | TKT-101 |
 | Auto-configuration | a library on the classpath activates its auto-config | auto-config split per starter — **use the starter, not the raw library** | TKT-101 |
-| Flyway | `flyway-core` alone runs migrations | needs `spring-boot-starter-flyway`; with only `flyway-core`, migrations **silently never run** | TKT-102 |
-| Mocking in slice tests | `@MockBean` | `@MockitoBean` (`org.springframework.test.context.bean.override.mockito`) | TKT-104 |
-| MVC test slice | `@WebMvcTest` in `...boot.test.autoconfigure.web.servlet` | `org.springframework.boot.webmvc.test.autoconfigure`, plus the `spring-boot-starter-webmvc-test` dependency | TKT-104 |
-| Jackson | Jackson 2, `com.fasterxml.jackson`, `ObjectMapper` | Jackson 3, `tools.jackson`, immutable `JsonMapper`; exceptions are unchecked; `java.time` works without a module | TKT-104, TKT-305 |
+| Flyway | `flyway-core` alone runs migrations | needs `spring-boot-starter-flyway`; with only `flyway-core`, migrations **silently never run** | TKT-103 |
+| Mocking in slice tests | `@MockBean` | `@MockitoBean` (`org.springframework.test.context.bean.override.mockito`) | TKT-105 |
+| MVC test slice | `@WebMvcTest` in `...boot.test.autoconfigure.web.servlet` | `org.springframework.boot.webmvc.test.autoconfigure`, plus the `spring-boot-starter-webmvc-test` dependency | TKT-105 |
+| Jackson | Jackson 2, `com.fasterxml.jackson`, `ObjectMapper` | Jackson 3, `tools.jackson`, immutable `JsonMapper`; exceptions are unchecked; `java.time` works without a module | TKT-105, TKT-305 |
 | Null-safety annotations | `@NonNullApi` (JSR-305) | JSpecify `@NullMarked` / `@Nullable` from `org.jspecify.annotations` | optional |
 | JUnit | JUnit 4 still possible | JUnit 4 support removed — JUnit 5 (Jupiter) only | — |
-| Test HTTP client | `TestRestTemplate`, `MockMvc` | adds `RestTestClient` (Spring Framework 7) | TKT-104 |
+| Test HTTP client | `TestRestTemplate`, `MockMvc` | adds `RestTestClient` (Spring Framework 7) | TKT-105 |
 
 ## Consequences
 - Positive: supported framework, longest support window, interview-relevant.

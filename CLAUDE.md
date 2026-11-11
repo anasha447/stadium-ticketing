@@ -20,14 +20,17 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
 1. One ticket at a time. Nothing starts until the current ticket is merged.
 2. One class or one logical block per turn. Never dump a full implementation.
 3. "Why" before "what" — justify every approach against the rejected alternative.
-4. Deconstruct every annotation: what it does behind the scenes.
-5. **Anas writes the code.** You explain, hint, review and correct.
+4. Deconstruct every annotation: what it does behind the scenes — in the lesson page.
+5. **Anas writes the code.** You write the lesson, hint, review, correct, and say when
+   and what to commit.
 
 ### Anas's working rules (added 2026-11-10 — these override defaults)
 
 6. **Strict TDD.** No business logic until a failing test exists **and Anas has run it
-   red**. Order is always: test → red → minimal code → green → refactor → commit.
-   Config-only work (POM, Compose, YAML) is exempt but still ends with a test proving it.
+   red**. One vertical slice at a time: test → red → minimal code → green → commit.
+   Refactoring happens at review (`/code-review`, then refactor commits). Seams are
+   agreed at kickoff (`tdd` skill). Config-only work (POM, Compose, YAML) still ends
+   with a test proving it.
 7. **No copy-paste git commands.** Say *what* to do ("create the branch for TKT-102",
    "commit now — tests are green", "open the PR"). Anas types the commands himself.
    Correct him only if he makes a mistake (wrong branch name, mixed commit, merged
@@ -37,23 +40,40 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
    config format) and **dependency names as Initializr shows them**, with one line on what
    each pulls in. To add a dependency later: same settings on start.spring.io →
    **Explore** → copy only that dependency. Never paste a whole `pom.xml`.
+   Dependencies arrive **just in time** — only in the ticket that first needs them.
 9. **Skip basic Java.** Don't explain records, streams, generics, `switch`, collections.
    Spend the time on how **Spring Boot, Redis, Kafka and distributed systems** solve the
    problem differently from plain Java (proxies, auto-configuration, transactions across
    processes, atomicity in Redis, delivery guarantees in Kafka).
 10. **Spring Boot 4.1.** When a concept differs from Boot 3 tutorials, say so (ADR-0004 table).
 
-Follow the full loop in [`docs/learning/TEACHING-LOOP.md`](docs/learning/TEACHING-LOOP.md)
-for every ticket. Process rules: [`docs/scrum/WORKFLOW.md`](docs/scrum/WORKFLOW.md).
+11. **Ports only with two adapters** (ADR-0005). One adapter → call the class directly.
+
+**The ticket loop** — full detail in [`docs/process/HOW-WE-WORK.md`](docs/process/HOW-WE-WORK.md):
+
+1. **Refine:** `/grill-with-docs` → a lean GitHub Issue (goal, why, behaviours, out of scope).
+2. **Kickoff + lesson:** read `docs/learning/records/`, agree seams, check facts in
+   `docs/learning/RESOURCES.md` (never memory alone), then write a **short** lesson in
+   `docs/learning/lessons/TKT-###.md` — primary `source:` · story · ways to build it ·
+   what we chose and why · under the hood (≤ 4 concepts, each with a Source link) ·
+   your mission · hints · `quiz` questions — and run `node docs/learning/build.mjs`.
+   More than 4 concepts → one lesson per slice (`TKT-###-1.md`, …). Anas tries first.
+3. **Build:** per slice — Anas runs the test red, writes the code, goes green; you check
+   the red reason, review, and say "commit now: <what>". Anas writes the message.
+4. **Review:** Anas runs `/code-review`, refactors, opens the PR (`Closes #N`); you review.
+5. **Close:** append the lesson's Wrap-up (what was implemented, what was learned, a
+   ready-to-paste note for `LEARNING-NOTES.md`), write a learning record if there was
+   real evidence, rebuild the site; Anas pastes the note and commits it on the branch;
+   then merge. Weekly: Anas does one round in the site's **Review** tab.
 
 ## Current status
 
-- **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/scrum/sprints/SPRINT-01.md`](docs/scrum/sprints/SPRINT-01.md)
-- **Active ticket:** TKT-101 — Root POM + `inventory` from Initializr + Docker Compose (TKT-100 done)
-- **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027; stretch: late Feb) — see ROADMAP
-- **Open decisions:** none (log in [`docs/architecture/REVIEW-FINDINGS.md`](docs/architecture/REVIEW-FINDINGS.md))
+- **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
+- **Active ticket:** TKT-101 — Walking skeleton: root POM + `inventory` (Web, Actuator) — lesson not written yet (TKT-100 done)
+- **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
+- **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
 
-_Update these three lines at the start and end of every ticket._
+_Update these lines at the start and end of every ticket._
 
 ## Stack
 
@@ -66,10 +86,12 @@ AssertJ · jqwik · Testcontainers · Docker Compose · Kubernetes · Next.js + 
 | Service | Owns | Style |
 |---|---|---|
 | `gateway` | routing, JWT check, Waiting Room, Draw, Admission Token, rate limits, SSE | reactive filter pipeline, Redis only |
-| `identity` | users, OTP Verified Identity, Device, Purchase Limit, JWT, `riskgraph/` | layered MVC + hexagonal `riskgraph` |
-| `catalog` | Match, Team, Standings, Importance, weather, live scores, demand topology | hexagonal + anti-corruption layer |
-| `inventory` | Seat Map, Block, Seat State, Hold, Run, Allocator, **Pricing**, Quote | DDD + hexagonal, Redis+Lua arbiter |
-| `ticketing` | Order, Payment, Saga, Outbox, Ticket, credentials, Scan Ledger, Resale | DDD + saga orchestration |
+| `identity` | users, fake-OTP Verified Identity, Device, Purchase Limit, JWT | layered MVC |
+| `catalog` | Match, Team, Standings, Importance, weather, live scores | hexagonal + anti-corruption layer |
+| `inventory` | Seat Map, Block, Seat State, Hold, Run, Allocator, **Pricing**, Quote | DDD, pure domain, Redis+Lua arbiter (no port, ADR-0005) |
+| `ticketing` | Order, Payment, Saga, Outbox, Ticket, Rotating Credential, Scan Ledger | DDD + saga orchestration |
+
+⭐ Stretch (after M3): demand pricing, Resale, PDF tickets, Souvenir, Fraud Ring Detection, Bot Risk.
 
 ## Repo map
 
@@ -79,11 +101,11 @@ contracts/                 shared event records (no Spring)
 services/<service>/        one Maven module per service
 frontend/                  Next.js app (from Sprint 7)
 infra/k8s/                 manifests (from Sprint 13)
-docs/architecture/         ARCHITECTURE, DESIGN, DATA-MODEL, EVENTS, API, TESTING-STRATEGY, REVIEW-FINDINGS
+docs/architecture/         ARCHITECTURE (incl. events + endpoints), DESIGN, DATA-MODEL
 docs/adr/                  architecture decision records
-docs/scrum/                WORKFLOW, ROADMAP, BACKLOG, sprints/SPRINT-NN.md
-docs/learning/             TEACHING-LOOP, LEARNING-NOTES
-.claude/skills/            project skills
+docs/process/              HOW-WE-WORK, ROADMAP (incl. stretch + icebox), sprints/SPRINT-NN.md
+docs/learning/             LEARNING-NOTES (Anas), lessons/, records/, RESOURCES (Claude), build.mjs → index.html
+.claude/skills/            tdd, grilling, domain-modeling, codebase-design, grill-with-docs, improve-codebase-architecture, …
 ```
 
 ## Read-when index
@@ -93,9 +115,9 @@ docs/learning/             TEACHING-LOOP, LEARNING-NOTES
 | which service owns what, infra | `docs/architecture/ARCHITECTURE.md` |
 | how a problem is solved (holds, saga, QR, queue, pricing) | `docs/architecture/DESIGN.md` |
 | tables, Redis keys, Lua inputs | `docs/architecture/DATA-MODEL.md` |
-| Kafka topics, producers, consumers | `docs/architecture/EVENTS.md` |
-| HTTP endpoints | `docs/architecture/API.md` |
-| what tests to write | `docs/architecture/TESTING-STRATEGY.md` |
+| Kafka topics, HTTP endpoints | `docs/architecture/ARCHITECTURE.md` §10–11 |
+| the ticket loop, tests, git, review, skills | `docs/process/HOW-WE-WORK.md` |
+| tickets of a sprint, roadmap, stretch | `docs/process/sprints/`, `docs/process/ROADMAP.md` |
 | why something was decided | `docs/adr/` |
 | a domain word | `GLOSSARY.md` |
 

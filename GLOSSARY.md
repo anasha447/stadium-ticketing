@@ -1,86 +1,218 @@
-# Glossary — the Ubiquitous Language
+# Stadium Ticketing
 
-These words are **law**: use them in packages, classes, tables, Kafka topics, endpoints
-and commit messages. Never use the synonym in the last column. A new term enters this
-file in the **same PR** that introduces it.
+Selling a fixed number of football-stadium seats per match to a flash crowd, fairly and
+without overselling. These words are the project's language: use them in code, tables,
+topics, tickets and commits, and never the words listed under _Avoid_. A new term enters
+this file in the same PR that introduces it. (⭐ marks stretch-goal concepts.)
 
 ## People
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Fan** | A person who buys tickets and enters the stadium. | customer, user, buyer |
-| **Admin** | Manages Matches, triggers Seat Map generation and warmup, reviews fraud. | operator |
-| **Steward** | Scans Tickets at the gate. | scanner, guard |
+**Fan**:
+A person who buys tickets for a Match and enters the stadium.
+_Avoid_: customer, user, buyer
 
-## Match & catalog (`catalog`)
+**Admin**:
+A staff member who manages Matches and their Seat Maps.
+_Avoid_: operator
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Match** | One football fixture that has seats to sell. | event, game, fixture (in code) |
-| **Standings** | League table, mirrored from the external feed. | ranking |
-| **Importance** | Match-level price multiplier (e.g. a derby or title decider costs more). | hype |
-| **Final Score** | The result published when the Match finishes (`match.finished`). | result |
+**Steward**:
+A staff member who checks Tickets at the stadium gates.
+_Avoid_: scanner, guard
 
-## Seats & inventory (`inventory`)
+## Matches
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Seat Map** | All 5000 Seats of one Match, grouped into Sections, Rows and Blocks. | layout, venue map |
-| **Section** | A part of a stand (e.g. `W-S03`); has one **Tier**. | zone, area |
-| **Tier** | `STANDARD` or `VIP`. 1000 VIP seats per Match. | category, class |
-| **Block** | The maximal span of Seats in a row between aisles (or an aisle and the section edge). Adjacency exists only inside a Block. | segment |
-| **Seat** | One sellable place, id like `W-S03-R07-12`. | spot, place |
-| **Seat State** | A Seat's live status in Redis: `A` (available), `H:<holdId>` (held), `S` (sold). | status, availability |
-| **Seat Claim** | The durable Postgres record of a sold Seat (`seat_claims`, `SOLD` / `CANCELLED`); its partial unique index is the overselling backstop. | booking, sale row |
-| **Warmup** | Rebuilding the Redis Seat State from Postgres (staging keys + `RENAME`). | sync, cache load |
-| **Occupancy** | Counters `{available, held, sold}` per Match. | stats |
-| **Hold** | A temporary, all-or-nothing lock on 1–4 Seats for one Fan, **Redis only**, TTL ~8 min. | reservation, lock, cart |
-| **Run** | A contiguous span of free Seats inside one Block. | streak, range |
-| **Orphan** | A free Run of length 1 left behind by an allocation — hard to sell. | gap, single |
-| **Allocator** | Picks the best Run for "pick for me" (No-Orphan scorer + Lua `find_and_hold_run`). | picker, assigner |
+**Match**:
+One football fixture with seats for sale.
+_Avoid_: event, game
 
-## Pricing (`inventory/pricing`)
+**Standings**:
+The league table the Match belongs to.
+_Avoid_: ranking
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Quote** | Immutable, identified, expiring price for a Hold; issued at Hold time, never recomputed (ADR-0002). | estimate, cart total |
-| **Group Discount** | 0% / 5% / 10% / 15% by position for up to 4 seats. | bulk discount |
-| **Booking Velocity** | Holds per time window, computed by Kafka Streams in `catalog`. | traffic |
-| **Demand Multiplier** | Step function of Booking Velocity, capped at 1.5×. | surge factor |
-| **Time Decay** | Monotone, pre-published price drop for unsold seats as kickoff nears. | markdown |
-| **Price Floor** | The minimum price; always wins last. | min price |
-| **Yield** | Revenue actually realised from the Seat Map. | profit |
+**Importance**:
+How much a Match matters (a derby, a title decider); it raises the price.
+_Avoid_: hype
 
-## Admission & identity (`gateway`, `identity`)
+**Final Score**:
+The result of a finished Match.
+_Avoid_: result
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Verified Identity** | A Fan verified by OTP on a phone number; the unit for limits and queue slots. | account, user |
-| **Device** | A Fan's bound phone/browser; receives the ticket secret. | client |
-| **Purchase Limit** | Max 4 tickets per Verified Identity per Match, as a ledger with a DB `CHECK`. | quota |
-| **Registration Window** | ~24 h before booking opens, when Fans join the Waiting Room. | pre-sale |
-| **Waiting Room** | The queue at the gateway that turns the flash crowd into a steady stream. | queue page, lobby |
-| **Draw** | Random shuffle of all registrants at open — position isn't decided by speed. | lottery, raffle |
-| **Admission Token** | Signed, match-scoped token that lets a Fan create a Hold. | ticket, pass |
-| **Checkout Grant** | Bound to a `holdId`, expires with the Hold; required for `POST /orders`. | session |
-| **Bot Risk** | Advisory score (fingerprint + behaviour); adds friction, never hard-blocks. | bot flag |
-| **Fraud Ring Detection** | Asynchronous graph analysis in `identity/riskgraph` after orders are confirmed. | fraud check |
+## Seats
 
-## Orders & tickets (`ticketing`)
+**Seat Map**:
+All the Seats of one Match, grouped into Sections, Rows and Blocks.
+_Avoid_: layout, venue map
 
-| Term | Meaning | Never say |
-|---|---|---|
-| **Order** | A purchase created from exactly one Hold (`UNIQUE(hold_id)`). | booking, purchase |
-| **Payment Attempt** | One try at charging an Order; at most one `CAPTURED`. | payment, transaction |
-| **Idempotency Key** | Client-sent key on `POST /orders`; a repeat returns the identical response. | request id |
-| **Confirmation Saga** | Orchestrated steps that turn a Hold + payment into Tickets, with compensations. | checkout flow |
-| **Outbox** | Table written in the same transaction as the state change, then relayed to Kafka. | event queue |
-| **Ticket** | The right of one Fan to enter for one Seat. | pass |
-| **Credential Class** | `APP` (rotating, device-bound) or `PRINT` (static, signed). | ticket type |
-| **Rotating Credential** | The in-app QR: `ticketId \| counter \| HMAC`, changes every 30 s. | QR code |
-| **Print Credential** | The static, signed code in a PDF; Steward does an ID check. | barcode |
-| **Ticket Document** | The generated PDF stored in S3/MinIO. | ticket file |
-| **Scan Ledger** | First-scan-wins record at the gates (`SETNX scan:{ticketId}`). | entry log |
-| **Dispute** | A second scan of an already-used Ticket; shows gate + time of first entry. | conflict |
-| **Resale** | Zero-margin resale on the platform at the original price; rotates the credential. | resell, transfer |
-| **Souvenir** | A finished Match's Ticket turned into a keepsake with the Final Score. | memento |
+**Section**:
+A named part of a stand, all of one Tier.
+_Avoid_: zone, area
+
+**Tier**:
+The class of a Seat: Standard or VIP.
+_Avoid_: category, class
+
+**Block**:
+The longest run of Seats in a row between two aisles, or between an aisle and the edge of the Section. Seats are adjacent only inside a Block.
+_Avoid_: segment
+
+**Seat**:
+One place a Fan can buy for a Match.
+_Avoid_: spot, place
+
+**Seat State**:
+Whether a Seat is available, held or sold right now.
+_Avoid_: status, availability
+
+**Seat Claim**:
+The permanent record that a Seat was sold (or that the sale was cancelled).
+_Avoid_: booking, sale row
+
+**Warmup**:
+Rebuilding the live Seat States of a Match from the permanent records.
+_Avoid_: sync, cache load
+
+**Occupancy**:
+How many Seats of a Match are available, held and sold.
+_Avoid_: stats
+
+**Hold**:
+A short, all-or-nothing lock of 1–4 Seats for one Fan while they pay; it expires on its own.
+_Avoid_: reservation, lock, cart
+
+**Run**:
+A row of consecutive free Seats inside one Block.
+_Avoid_: streak, range
+
+**Orphan**:
+A single free Seat left alone by an allocation, which is hard to sell.
+_Avoid_: gap, single
+
+**Allocator**:
+The part that picks the best Run when a Fan asks for seats together.
+_Avoid_: picker, assigner
+
+## Prices
+
+**Quote**:
+The fixed price of a Hold, given when the Hold is made and never recalculated.
+_Avoid_: estimate, cart total
+
+**Group Discount**:
+A discount that grows with each extra Seat bought together, up to four.
+_Avoid_: bulk discount
+
+**Time Decay**:
+A published drop in price for unsold Seats as kickoff gets closer.
+_Avoid_: markdown
+
+**Price Floor**:
+The lowest price a Seat can ever have.
+_Avoid_: minimum price
+
+**Yield**:
+The revenue actually earned from a Match's Seats.
+_Avoid_: profit
+
+**Booking Velocity** ⭐:
+How fast Seats of a Match are being held.
+_Avoid_: traffic
+
+**Demand Multiplier** ⭐:
+A capped price factor that follows Booking Velocity.
+_Avoid_: surge factor
+
+## Admission and identity
+
+**Verified Identity**:
+A Fan proven to own a phone number through a one-time code; the unit that limits and queue places count.
+_Avoid_: account, user
+
+**Device**:
+The phone or browser a Fan has bound to their tickets.
+_Avoid_: client
+
+**Purchase Limit**:
+The most Tickets one Verified Identity may buy for a Match: four.
+_Avoid_: quota
+
+**Registration Window**:
+The period before booking opens when Fans join the Waiting Room.
+_Avoid_: pre-sale
+
+**Waiting Room**:
+Where Fans wait before booking, so the crowd enters at a steady pace.
+_Avoid_: queue page, lobby
+
+**Draw**:
+The random ordering of everyone in the Waiting Room when booking opens, so arrival time and speed give no advantage.
+_Avoid_: lottery, raffle
+
+**Admission Token**:
+Permission for one Fan to start booking a Match.
+_Avoid_: pass
+
+**Checkout Grant**:
+Permission to pay for one specific Hold; it ends with the Hold.
+_Avoid_: session
+
+**Bot Risk** ⭐:
+An advisory score that a visitor is automated; it adds friction, never blocks.
+_Avoid_: bot flag
+
+**Fraud Ring Detection** ⭐:
+Finding groups of accounts that buy together to get around the Purchase Limit.
+_Avoid_: fraud check
+
+## Orders and tickets
+
+**Order**:
+A purchase made from exactly one Hold.
+_Avoid_: booking, purchase
+
+**Payment Attempt**:
+One try at charging an Order; an Order can have several, and at most one succeeds.
+_Avoid_: payment, transaction
+
+**Idempotency Key**:
+A key the client sends so that repeating the same request has the same effect as sending it once.
+_Avoid_: request id
+
+**Confirmation Saga**:
+The steps that turn a paid Hold into Tickets, each with an undo step if a later one fails.
+_Avoid_: checkout flow
+
+**Outbox**:
+Events stored together with the change that caused them, then published.
+_Avoid_: event queue
+
+**Ticket**:
+The right of one Fan to enter for one Seat at one Match.
+_Avoid_: pass
+
+**Rotating Credential**:
+The in-app code that proves a Ticket at the gate and changes every few seconds, so screenshots are useless.
+_Avoid_: QR code
+
+**Scan Ledger**:
+The record of which Tickets have entered; the first scan wins.
+_Avoid_: entry log
+
+**Dispute**:
+A second scan of a Ticket that has already entered.
+_Avoid_: conflict
+
+**Resale** ⭐:
+Selling a Ticket back through the platform at the original price.
+_Avoid_: resell, transfer
+
+**Print Credential** ⭐:
+A fixed, signed code for a printed Ticket; the Steward checks ID.
+_Avoid_: barcode
+
+**Ticket Document** ⭐:
+The PDF version of a Ticket.
+_Avoid_: ticket file
+
+**Souvenir** ⭐:
+A used Ticket turned into a keepsake with the Final Score.
+_Avoid_: memento
