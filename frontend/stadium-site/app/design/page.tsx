@@ -120,7 +120,7 @@ export default function DesignPage() {
             Text · Geist · sentences, labels, buttons
           </p>
           <p className="max-w-xl text-lg">
-            Your seats are held for ten minutes. The price on the Quote is the
+            Your seats are held for eight minutes. The price on the Quote is the
             price you pay.
           </p>
         </div>

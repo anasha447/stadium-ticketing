@@ -11,6 +11,7 @@ done here.
 | D-2 | **Block** = a numbered group of Seats (101–140, 201–240, 301–340). **Row** = one row of Seats inside a Block. Seats are adjacent only inside one Row. Section is gone | Block = the run of Seats in one row between aisles (`block_id` like `W-S03-R07-B1`); Section groups rows | DATA-MODEL (`blocks`, `seats`, Redis `block:<id>` bitmaps), TKT-104, TKT-301, TKT-302 | ☐ |
 | D-3 | Four **Tiers**: Club Premium, Category 1, Category 2, Category 3. New term **Level**: lower, club, upper | Tier is `STANDARD` or `VIP`; `vip_count` column | DATA-MODEL (`tier` CHECK, `vip_count`), TKT-104, TKT-303 | ☐ |
 | D-4 | Seat id `<block>-R<row>-<seat>`, e.g. `214-R07-12` | `W-S03-R07-12` (stand, section, row, seat) | DATA-MODEL, ARCHITECTURE §11 example, TKT-105 | ☐ |
+| D-5 | Compact responses: the Seat Map is 120 Blocks with `rowSeats`; Seat States are one string per Block (`A`/`H`/`S`), with `?blocks=`; problem type names in `lib/api/problem.ts` | Seat Map as sections → rows → seats; one state per seat; only `seats-unavailable` named | ARCHITECTURE §11, TKT-105, TKT-203, TKT-204 | ☐ |
 
 ## Decided in favour of the backend (no deviation)
 
