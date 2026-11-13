@@ -49,7 +49,30 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
 
 11. **Ports only with two adapters** (ADR-0005). One adapter → call the class directly.
 
-**The ticket loop** — full detail in [`docs/process/HOW-WE-WORK.md`](docs/process/HOW-WE-WORK.md):
+### Frontend track — a different mode (ADR-0006, added 2026-11-13)
+
+Rules 1–11 are for the **backend**. For anything under `frontend/`:
+
+- **Claude writes the code; Anas reviews and runs it.** No lesson pages, no strict TDD.
+  Tests cover logic (API client, mock layer, countdown, selection rules), not visuals.
+- Rule 7 still holds: Anas does all git himself.
+- The brief is `.claude/skills/animation.md`; the contracts are `docs/architecture/FRONTEND.md`.
+- The UI runs on the mock layer until the gateway exists. A frontend choice that differs
+  from the backend docs goes into `docs/process/FRONTEND-DEVIATIONS.md` in the same PR.
+- This Next.js version has breaking changes: read `frontend/stadium-site/AGENTS.md` and
+  the bundled docs it points to before writing Next code.
+
+**Frontend skills — when to use which**
+
+| When | Skill | How |
+|---|---|---|
+| any change under `frontend/` | `stadium-design-system` | read first; tokens, type, seat colours, motion, wording. Change it on purpose, in the same PR |
+| starting a new screen | `frontend-design` | set direction and composition inside the design system |
+| a 3D model from `.claude/skills/photos/` | `img2threejs` | only for models (bowl, seat, fan, goal); never for UI |
+| the screen works | `impeccable` | critique → animate → polish; `audit` before the sprint ends |
+| before each frontend PR | `ui-taste` | final visual review; fix or list what it finds |
+
+**The ticket loop** (backend) — full detail in [`docs/process/HOW-WE-WORK.md`](docs/process/HOW-WE-WORK.md):
 
 1. **Refine:** `/grill-with-docs` → a lean GitHub Issue (goal, why, behaviours, out of scope).
 2. **Kickoff + lesson:** read `docs/learning/records/`, agree seams, check facts in
@@ -69,7 +92,9 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
-- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done)
+- **Active track:** frontend F-track (ADR-0006) — Sprint **F1 Foundation** (Nov 14 – Nov 20, 2026) → ROADMAP "Frontend track"
+- **Active ticket:** TKT-F101 — design system (skill written; tokens + fonts not yet in `globals.css`)
+- **Backend, paused at:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` before resuming
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
 
@@ -99,7 +124,7 @@ AssertJ · jqwik · Testcontainers · Docker Compose · Kubernetes · Next.js + 
 CLAUDE.md  GLOSSARY.md  pom.xml  docker-compose.yml
 contracts/                 shared event records (no Spring)
 services/<service>/        one Maven module per service
-frontend/                  Next.js app (from Sprint 7)
+frontend/stadium-site/     Next.js app (F-track, ADR-0006)
 infra/k8s/                 manifests (from Sprint 13)
 docs/architecture/         ARCHITECTURE (incl. events + endpoints), DESIGN, DATA-MODEL
 docs/adr/                  architecture decision records
@@ -116,6 +141,9 @@ docs/learning/             LEARNING-NOTES (Anas), lessons/, records/, RESOURCES 
 | how a problem is solved (holds, saga, QR, queue, pricing) | `docs/architecture/DESIGN.md` |
 | tables, Redis keys, Lua inputs | `docs/architecture/DATA-MODEL.md` |
 | Kafka topics, HTTP endpoints | `docs/architecture/ARCHITECTURE.md` §10–11 |
+| which screen calls which endpoint, mock layer | `docs/architecture/FRONTEND.md` |
+| the 3D stadium and booking experience | `.claude/skills/animation.md` |
+| frontend choices the backend must absorb | `docs/process/FRONTEND-DEVIATIONS.md` |
 | the ticket loop, tests, git, review, skills | `docs/process/HOW-WE-WORK.md` |
 | tickets of a sprint, roadmap, stretch | `docs/process/sprints/`, `docs/process/ROADMAP.md` |
 | why something was decided | `docs/adr/` |
@@ -148,7 +176,9 @@ If a new term appears, add it to the glossary in the same PR.
 - Put the rotating QR code in a PDF.
 - Store card numbers or raw IPs.
 - Write implementation before its failing test has been run.
-- Hand Anas git commands, a full `pom.xml`, or a finished class to copy.
+- Hand Anas git commands, a full `pom.xml`, or a finished backend class to copy.
+- Use a raw colour, font or easing in `frontend/` that is not a design-system token.
+- Put more than four Seats in a Hold, or compute a price in the frontend.
 
 ## Commands
 
