@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Stadium design system tokens.
+   Source of truth: .claude/skills/stadium-design-system/assets/tokens.css
+   Change both files in the same commit. */
+
+@theme {
+  /* Only design-system colours exist: the default Tailwind palette is removed,
+     so `bg-zinc-900` and friends do not compile to anything. */
+  --color-*: initial;
+
+  /* Interface: night and floodlight */
+  --color-night-950: #05070f; /* page, sky */
+  --color-night-900: #0b1020; /* solid surface */
+  --color-night-800: #141b30; /* raised surface, inputs */
+  --color-night-700: #212a45; /* borders on solid surfaces */
+  --color-flood-50: #f4f1ea; /* primary text */
+  --color-flood-300: #a7aec2; /* secondary text */
+  --color-flood-500: #6b7390; /* hints, disabled */
+
+  /* Action: the single orange */
+  --color-signal-400: #ff7a45; /* hover */
+  --color-signal-500: #ff5a1f; /* rest */
+  --color-signal-600: #e04710; /* pressed */
+  --color-signal-ink: #170800; /* text on orange */
+
+  /* Seats, mosaic mode (stadium view) */
+  --color-seat-blau: #1f4fa8;
+  --color-seat-grana: #9e1b4b;
+  --color-seat-or: #f2c230; /* the marks */
+
+  /* Seats, state mode (Block and Seat view) */
+  --color-tier-premium: #b79cff; /* Club Premium */
+  --color-tier-1: #5aa9ff; /* Category 1 */
+  --color-tier-2: #35c2b0; /* Category 2 */
+  --color-tier-3: #8fa3bf; /* Category 3 */
+  --color-state-held: #ffb020; /* held by someone, pulses */
+  --color-state-sold: #3a4158; /* sold, plus a seated fan */
+  --color-state-mine: #7cf5ff; /* yours, outline */
+
+  /* Messages only */
+  --color-ok: #3ddc84;
+  --color-warn: #ffb020;
+  --color-danger: #ff4d5e;
+
+  /* Shape */
+  --radius-panel: 16px;
+  --radius-control: 10px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* things arriving */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* camera, things travelling */
+  --duration-fast: 120ms; /* hover, press */
+  --duration-base: 220ms; /* panels, cards */
+  --duration-slow: 420ms; /* drawers, screen changes */
 }
 
+/* Fonts point at the variables next/font sets on <html> (app/layout.tsx).
+   `inline` makes utilities use the variable directly instead of a copy. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-night-950);
+    color: var(--color-flood-50);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-state-mine);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Glass: only for panels floating over the 3D canvas. */
+@utility glass {
+  background: rgb(11 16 32 / 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: var(--radius-panel);
+}
+
+/* Display type: stadium signage. Uppercase, tight, slightly tracked. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Data type: anything that changes while the Fan looks at it. */
+@utility data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

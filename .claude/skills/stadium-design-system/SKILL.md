@@ -58,9 +58,9 @@ The countdown is `flood-50` until 60 seconds remain, then `warn`, then `danger` 
 
 | Role | Font | Use |
 |---|---|---|
-| Display | **Big Shoulders Display** (700–900, uppercase) | fixture names, screen titles, Block numbers, big numerals. It is cut like stadium signage |
+| Display | **Big Shoulders** (800, uppercase, the `display` utility) | fixture names, screen titles, Block numbers, big numerals. It is cut like stadium signage |
 | Text | **Geist** | everything read as a sentence, labels, buttons |
-| Data | **Geist Mono**, `tabular-nums` | countdown, prices, seat ids, queue position: anything that changes while you look at it, so digits do not jump |
+| Data | **Geist Mono**, tabular (the `data` utility) | countdown, prices, seat ids, queue position: anything that changes while you look at it, so digits do not jump |
 
 Scale (rem): 0.75 · 0.875 · 1 · 1.125 · 1.5 · 2.25 · 3.5 · 5.5. Display sizes use
 `clamp()` so a fixture title fills a phone and a desktop alike. Body text is never below
