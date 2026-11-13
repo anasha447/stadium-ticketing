@@ -17,7 +17,7 @@ missing, so add the token instead.
 
 ## Colour
 
-Colour has three separate jobs. Keeping them apart is what makes the screen readable.
+Colour has four separate jobs. Keeping them apart is what makes the screen readable.
 
 **1. Interface: night and floodlight.** Backgrounds are `night-950` to `night-800`. Text is
 `flood-50`, with `flood-300` for secondary and `flood-500` for hints. Nothing in the
@@ -40,6 +40,12 @@ The four Tier colours (`tier-premium`, `tier-1`, `tier-2`, `tier-3`) were chosen
 apart from amber and from each other for colour-blind Fans, and they also colour the
 legend. A state is never carried by colour alone: held pulses, sold has a figure, yours
 has an outline, and the hover card says the state in words.
+
+**4. The scene.** The `scene-*` tokens are what the stadium is built from in 3D: concrete,
+facade, roof, turf. Three.js cannot read Tailwind classes, so 3D code takes every colour
+from `frontend/stadium-site/lib/design/tokens.ts`, which mirrors `globals.css` and has a
+test that fails if the two drift apart. A hex value written straight into a 3D component
+is the same mistake as one in a class name.
 
 `ok`, `warn` and `danger` are for messages only, never for seats.
 

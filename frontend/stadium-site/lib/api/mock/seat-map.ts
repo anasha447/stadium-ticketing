@@ -1,10 +1,9 @@
-import type { Block, Level, Money, SeatMap, Side, Tier } from "@/lib/domain/types";
+import type { Block, Level, Money, SeatMap, Tier } from "@/lib/domain/types";
 import { blockSeatCount } from "@/lib/domain/seat-id";
+import { BLOCKS_PER_LEVEL, sideOf } from "@/lib/domain/stadium";
 
 // Generates the Seat Map: 3 Levels x 40 Blocks, about 60,000 seats.
 // Pure and deterministic: the same call always returns the same map.
-
-export const BLOCKS_PER_LEVEL = 40;
 
 interface LevelShape {
   level: Level;
@@ -28,27 +27,6 @@ export const BASE_PRICE: Record<Tier, Money> = {
   CATEGORY_2: "180.00",
   CATEGORY_3: "90.00",
 };
-
-// Going clockwise from the south-west corner: 13 Blocks along the west side,
-// 7 behind the north goal, 13 along the east side, 7 behind the south goal.
-const SIDES: { side: Side; blocks: number }[] = [
-  { side: "WEST", blocks: 13 },
-  { side: "NORTH", blocks: 7 },
-  { side: "EAST", blocks: 13 },
-  { side: "SOUTH", blocks: 7 },
-];
-
-/** The side a position is on, and how far along that side it is. */
-export function sideOf(position: number): { side: Side; index: number; length: number } {
-  let start = 0;
-  for (const { side, blocks } of SIDES) {
-    if (position < start + blocks) {
-      return { side, index: position - start, length: blocks };
-    }
-    start += blocks;
-  }
-  throw new RangeError(`No Block at position ${position}`);
-}
 
 /**
  * Best seats along the long sides, cheapest behind the goals.

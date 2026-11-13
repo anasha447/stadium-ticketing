@@ -38,6 +38,14 @@
   --color-state-sold: #3a4158; /* sold, plus a seated fan */
   --color-state-mine: #7cf5ff; /* yours, outline */
 
+  /* The 3D scene: what the stadium itself is made of */
+  --color-scene-concrete: #6f7890; /* terraces */
+  --color-scene-facade: #364063; /* outer wall */
+  --color-scene-roof: #dfe6f5; /* roof ring */
+  --color-scene-turf-light: #2f8f46; /* mowing stripes */
+  --color-scene-turf-dark: #277c3c;
+  --color-scene-turf-edge: #1d5c30; /* run-off around the pitch */
+
   /* Messages only */
   --color-ok: #3ddc84;
   --color-warn: #ffb020;

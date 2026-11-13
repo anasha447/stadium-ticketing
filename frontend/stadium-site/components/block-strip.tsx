@@ -1,4 +1,5 @@
-import type { Block, Level, SeatCounts } from "@/lib/domain/types";
+import { SIDES } from "@/lib/domain/stadium";
+import type { Block, Level, SeatCounts, Side } from "@/lib/domain/types";
 import { formatCount } from "@/lib/format";
 
 // The stadium unrolled: one cell per Block, one band per Level, read left to
@@ -10,14 +11,13 @@ const BANDS: { level: Level; name: string; height: string }[] = [
   { level: "LOWER", name: "Lower", height: "h-6" },
 ];
 
-// How many Blocks each side has, in the order the cells run.
-// `detail` is dropped on narrow screens, where seven Blocks are too few to fit it.
-const SIDES = [
-  { name: "West", detail: "side", blocks: 13 },
-  { name: "North", detail: "goal", blocks: 7 },
-  { name: "East", detail: "side", blocks: 13 },
-  { name: "South", detail: "goal", blocks: 7 },
-];
+// `detail` is dropped on narrow screens, where a goal end is too short for it.
+const SIDE_LABEL: Record<Side, { name: string; detail: string }> = {
+  WEST: { name: "West", detail: "side" },
+  NORTH: { name: "North", detail: "goal" },
+  EAST: { name: "East", detail: "side" },
+  SOUTH: { name: "South", detail: "goal" },
+};
 
 const GRID = "grid grid-cols-[repeat(40,minmax(0,1fr))] gap-px";
 
@@ -62,14 +62,14 @@ export function BlockStrip({ blocks, counts, labelled = false }: BlockStripProps
         <div className="flex gap-3 pt-1">
           <span className="w-12 shrink-0" />
           <div className={`${GRID} flex-1 text-xs text-flood-500`}>
-            {SIDES.map(({ name, detail, blocks: span }) => (
+            {SIDES.map(({ side, blocks: span }) => (
               <span
-                key={name}
+                key={side}
                 style={{ gridColumn: `span ${span}` }}
                 className="truncate border-t border-night-700 pt-1"
               >
-                {name}
-                <span className="hidden sm:inline"> {detail}</span>
+                {SIDE_LABEL[side].name}
+                <span className="hidden sm:inline"> {SIDE_LABEL[side].detail}</span>
               </span>
             ))}
           </div>

@@ -81,7 +81,21 @@ together in one Row), a taken seat returns 409 with `conflictingSeatIds`, and th
 - The mock's `POST /auth/otp/request` also returns `demoCode`, so the demo can show the
   code on screen. The real service prints it to its console and never returns it.
 
-## 4. Errors
+## 4. The 3D stadium
+
+```
+lib/domain/stadium.ts     how the 40 Blocks of a Level go around the bowl (12 / 8 / 12 / 8)
+lib/stadium/layout.ts     where every Block, Row and seat is, in metres. Pure maths, tested
+lib/stadium/geometry.ts   turns those numbers into meshes by sweeping a cross-section round the ring
+lib/design/tokens.ts      the colours 3D code may use, checked against globals.css by a test
+components/stadium/       the React Three Fiber scene: bowl, pitch, canvas and controls
+```
+
+The Seat Map says how many Rows and seats a Block has; `layout.ts` says where they are.
+Terraces, seats and camera all read the same module, so a seat can never float off its
+step. The canvas is loaded only in the browser and only on the seats page.
+
+## 5. Errors
 
 Every failure is an RFC 9457 `ProblemDetail`. The client maps `type` to a message and an
 action, never the HTTP status alone:
@@ -100,7 +114,7 @@ action, never the HTTP status alone:
 Only `seats-unavailable` exists in ARCHITECTURE §11 today. The others are the names in
 `lib/api/problem.ts`; the backend tickets confirm or rename them.
 
-## 5. Contracts the frontend fixed first
+## 6. Contracts the frontend fixed first
 
 Seat count, Block, Tier and seat id differ from the backend docs. See
 [`FRONTEND-DEVIATIONS.md`](../process/FRONTEND-DEVIATIONS.md).
