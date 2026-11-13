@@ -2,6 +2,8 @@
    Source of truth. Mirrored in frontend/stadium-site/app/globals.css. */
 
 @theme {
+  --color-*: initial; /* remove the default Tailwind palette */
+
   /* Interface: night and floodlight */
   --color-night-950: #05070f; /* page, sky */
   --color-night-900: #0b1020; /* solid surface */
@@ -36,11 +38,6 @@
   --color-warn: #ffb020;
   --color-danger: #ff4d5e;
 
-  /* Type */
-  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-
   /* Shape */
   --radius-panel: 16px;
   --radius-control: 10px;
@@ -53,8 +50,15 @@
   --duration-slow: 420ms;  /* drawers, screen changes */
 }
 
+/* Fonts point at the variables next/font sets on <html>. */
+@theme inline {
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
 /* Glass: only for panels floating over the 3D canvas. */
-.glass {
+@utility glass {
   background: rgb(11 16 32 / 0.72);
   backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgb(255 255 255 / 0.1);
