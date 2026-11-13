@@ -61,15 +61,15 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
 3. **Build:** per slice — Anas runs the test red, writes the code, goes green; you check
    the red reason, review, and say "commit now: <what>". Anas writes the message.
 4. **Review:** Anas runs `/code-review`, refactors, opens the PR (`Closes #N`); you review.
-5. **Close:** append the lesson's Wrap-up (what was implemented, what was learned, a
-   ready-to-paste note for `LEARNING-NOTES.md`), write a learning record if there was
-   real evidence, rebuild the site; Anas pastes the note and commits it on the branch;
-   then merge. Weekly: Anas does one round in the site's **Review** tab.
+5. **Close (automatic, unasked):** append the lesson's Wrap-up, **write the
+   `LEARNING-NOTES.md` entry yourself** (short, plain, human — Anas's voice), **switch
+   Current status below to the next ticket**, write a learning record if there was real
+   evidence, rebuild the site. Anas reviews, commits it on the branch, then merges. Weekly: Anas does one round in the site's **Review** tab.
 
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
-- **Active ticket:** TKT-101 — Walking skeleton: root POM + `inventory` (Web, Actuator) — lesson not written yet (TKT-100 done)
+- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done)
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
 
@@ -152,10 +152,12 @@ If a new term appears, add it to the glossary in the same PR.
 
 ## Commands
 
-_Filled in by TKT-101._
+Run from the repository root.
 
 ```bash
-./mvnw clean verify                 # build + all tests
-docker compose up -d                # local infrastructure
-./mvnw -pl services/inventory spring-boot:run
+./mvnw clean verify                              # build every module + all tests
+./mvnw -pl services/inventory spring-boot:run    # inventory on :8081 → /actuator/health
+node docs/learning/build.mjs                     # rebuild the learning site
 ```
+
+`docker compose up -d` (local infrastructure) arrives with TKT-103.

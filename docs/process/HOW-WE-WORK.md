@@ -133,9 +133,10 @@ Claude does not jump to the fix. It asks: 1. What did you expect? 2. What happen
    - **What you implemented** — the slices, files and commits that landed.
    - **What you learned** — the concepts, in short.
    - **Note for LEARNING-NOTES.md** — a ready-to-paste block (copy button on the page).
-2. Anas pastes the note into `docs/learning/LEARNING-NOTES.md` (it is *his* file — he
-   may edit it), updates `CLAUDE.md` → Current status, and commits both **on the ticket
-   branch before merging** (`docs(...)` commit). Nothing is committed straight to `main`.
+2. Claude also writes the note into `docs/learning/LEARNING-NOTES.md` itself (short,
+   plain, in Anas's voice — it is *his* file, so he reviews and edits it) and switches
+   `CLAUDE.md` → Current status to the next ticket. Anas reviews both and commits them
+   **on the ticket branch before merging** (`docs(...)` commit). Nothing is committed straight to `main`.
    So Phase 5 happens just before the merge in Phase 4, step 4.
 3. Claude writes a **learning record** for anything this ticket gave real evidence of
    (§9), and names the next ticket.
@@ -207,7 +208,7 @@ classes and commit plans belong in the lesson page, decided at kickoff.
 - [ ] `/code-review` run and refactors committed; Claude's review has no 🔴 left
 - [ ] Commits small, Conventional Commits, each one builds
 - [ ] `GLOSSARY.md`, docs and ADRs updated where relevant
-- [ ] Lesson wrap-up written; LEARNING-NOTES.md updated by Anas
+- [ ] Lesson wrap-up written; LEARNING-NOTES.md and CLAUDE.md status updated by Claude, reviewed by Anas
 - [ ] `CLAUDE.md` Current status updated
 
 ## 4. Git — Anas drives

@@ -4,6 +4,24 @@ One short section per ticket, newest first: what I did and what I learned.
 
 ---
 
+## TKT-101 — Walking skeleton: root POM + inventory · Nov 13, 2026
+
+**What I did**
+- Made a root `pom.xml` that lists the modules and is also the parent of every service
+- Generated `inventory` on start.spring.io and pointed its parent at the root POM
+- Moved the Maven Wrapper to the root, so one `./mvnw clean verify` builds everything
+- Added Actuator after seeing the health test fail with 404, then set the port to 8081
+
+**What I learned**
+- **Aggregator vs parent** — `<modules>` = what to build, `<parent>` = what to inherit. An empty `<relativePath/>` doesn't look at my disk at all.
+- **No versions in the service POM** — Boot's parent already decides them.
+- **Run tests with the wrapper, not just IntelliJ** — the IDE gave me ClassNotFound only because the module wasn't imported. Also 360 antivirus was blocking Java on localhost, so a weird network error isn't always my code.
+- **A red only counts if it fails for the right reason** — I added Actuator too early and had to go back to see the 404.
+- **YAML is strict** — I wrote `service:` instead of `server:` and `port:8081` without a space. Spring ignored both and stayed on 8080.
+- **Staging a whole folder is risky** — it pulled in a file from the next slice.
+
+---
+
 ## TKT-100 — Verify repository baseline · Nov 10, 2026
 
 **What I did**
