@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Level } from "@/lib/domain/types";
+import type { Block } from "@/lib/domain/types";
 
 // Three.js needs a browser, so the canvas is loaded only on the client, and
 // only on this page: no other page pays for the 3D code.
@@ -18,6 +18,6 @@ export function StadiumLoading() {
   );
 }
 
-export function StadiumView({ rows }: { rows: Record<Level, number> }) {
-  return <StadiumCanvas rows={rows} />;
+export function StadiumView({ blocks }: { blocks: Block[] }) {
+  return <StadiumCanvas blocks={blocks} />;
 }

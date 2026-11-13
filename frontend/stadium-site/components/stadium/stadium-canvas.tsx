@@ -2,11 +2,12 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { COLOR } from "@/lib/design/tokens";
-import type { Level } from "@/lib/domain/types";
+import type { Block, Level } from "@/lib/domain/types";
 import { Bowl } from "./bowl";
 import { Pitch } from "./pitch";
+import { Seats } from "./seats";
 
 // The 3D view. Drag to spin, scroll or pinch to zoom. It turns slowly by
 // itself until the Fan touches it, and never turns by itself for Fans who
@@ -34,9 +35,16 @@ function usePrefersReducedMotion(): boolean {
   );
 }
 
-export default function StadiumCanvas({ rows }: { rows: Record<Level, number> }) {
+export default function StadiumCanvas({ blocks }: { blocks: Block[] }) {
   const reducedMotion = usePrefersReducedMotion();
   const [touched, setTouched] = useState(false);
+
+  // The terraces have one step per Row, so they need the Row count per Level.
+  const rows = useMemo(() => {
+    const count = {} as Record<Level, number>;
+    for (const block of blocks) count[block.level] = block.rowSeats.length;
+    return count;
+  }, [blocks]);
 
   return (
     <Canvas
@@ -67,6 +75,7 @@ export default function StadiumCanvas({ rows }: { rows: Record<Level, number> })
 
       <Pitch />
       <Bowl rows={rows} />
+      <Seats blocks={blocks} />
 
       {/* The ground outside the stadium. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
