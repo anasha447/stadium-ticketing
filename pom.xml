@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Role 1: PARENT of every module. Its own parent is Boot, so every module
+	     inherits Boot's dependencyManagement and plugin configuration through us. -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.1.2</version>
+		<relativePath/> <!-- empty on purpose: Boot's parent comes from the repository -->
+	</parent>
+
+	<groupId>com.stadium</groupId>
+	<artifactId>ticketing-platform</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>ticketing-platform</name>
+	<description>Stadium Ticketing Platform: root aggregator and parent POM</description>
+
+	<properties>
+		<java.version>21</java.version>
+	</properties>
+
+	<!-- Role 2: AGGREGATOR. One command here builds every listed module (the reactor). -->
+	<modules>
+		<module>services/inventory</module>
+	</modules>
+
+</project>
