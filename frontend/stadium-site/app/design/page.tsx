@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 export const metadata: Metadata = { title: "Design system" };
 
@@ -68,9 +67,6 @@ export default function DesignPage() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-12 sm:px-12">
       <header className="flex flex-col gap-4">
-        <Link href="/" className="text-sm text-flood-300 hover:text-flood-50">
-          ← Home
-        </Link>
         <h1 className="display text-[clamp(2.25rem,8vw,5.5rem)]">
           Design system
         </h1>
@@ -206,9 +202,6 @@ export default function DesignPage() {
         </div>
       </section>
 
-      <footer className="border-t border-night-700 pt-6 text-xs text-flood-500">
-        Fan-made demo, not affiliated with FC Barcelona or Spotify.
-      </footer>
     </main>
   );
 }
