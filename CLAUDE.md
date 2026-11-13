@@ -96,7 +96,7 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
 - **Active track:** frontend F-track (ADR-0006) — Sprint **F1 Foundation** (Nov 14 – Nov 20, 2026) → ROADMAP "Frontend track"
-- **Active ticket:** TKT-F101 — design system — built, waiting for Anas's review and merge. Next: TKT-F102 (typed API client + mock layer)
+- **Active ticket:** TKT-F102 — typed API client + mock layer — built, PR open for review. Next: TKT-F103 (app shell, match list, match page)
 - **Backend, paused at:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` before resuming
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
@@ -191,6 +191,14 @@ Run from the repository root.
 ./mvnw clean verify                              # build every module + all tests
 ./mvnw -pl services/inventory spring-boot:run    # inventory on :8081 → /actuator/health
 node docs/learning/build.mjs                     # rebuild the learning site
+```
+
+Frontend, from `frontend/stadium-site`:
+
+```bash
+npm run dev          # the app on :3000, on the mock layer unless API_BASE_URL is set
+npm test             # vitest: API client, mock layer, domain helpers
+npm run lint && npm run typecheck && npm run build
 ```
 
 `docker compose up -d` (local infrastructure) arrives with TKT-103.

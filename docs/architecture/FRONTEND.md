@@ -37,24 +37,44 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 Later, off the F-track: Steward scanner (`POST /gate/scans`, Sprint 11), Admin occupancy
 heatmap (Sprint 12), Rotating Credential (`GET /tickets/{id}/credential`, Sprint 11).
 
-## 3. One client, two backends
+## 3. One client, two adapters
 
 ```
-frontend/stadium-site/
-  lib/api/        typed client: one function per endpoint, returns domain types
-  lib/api/mock/   answers the same paths with the same shapes
+frontend/stadium-site/lib/
+  domain/              types and seat-id helpers, shared by everything
+  api/stadium-api.ts   the interface: one method per endpoint the Fan flow uses
+  api/http.ts          adapter 1: the gateway, over fetch
+  api/mock/            adapter 2: the mock backend
+  api/index.ts         picks one and exports `api`
 ```
 
-- `API_BASE_URL` set → rewrites point at the gateway.
-- `API_BASE_URL` unset → `/api/*` is served by the mock layer inside Next.
+Screens only ever write `import { api } from "@/lib/api"`.
 
-Screens only ever import from `lib/api`. Switching to the real backend is an environment
-change, and any screen that breaks has found a contract mismatch.
+- `API_BASE_URL` unset → the mock adapter. Nothing goes over the network.
+- `API_BASE_URL` set → the HTTP adapter. `next.config.ts` rewrites `/api/*` to the
+  gateway and tells the browser bundle which adapter to use.
 
-The mock layer holds its state (Holds, Orders, Tickets, sold seats) in the browser's
-`localStorage` behind the same functions, with a reset. It also enforces the real rules
-so the UI is honest: a Hold is 1–4 Seats and expires, a Quote never changes, a second
-Hold on a taken seat returns 409 with `conflictingSeatIds`.
+Switching to the real backend is an environment change, and any screen that breaks has
+found a contract mismatch.
+
+**What the mock does.** Matches, the Seat Map and the already-sold seats are generated
+from the Match id, so they are identical on the server and in the browser and on every
+load. What belongs to this Fan (Holds, Orders, Tickets, sign-in) is kept in the browser's
+`localStorage`, with `resetMockData()` to start again. It keeps the real rules so the UI
+is honest: a Hold is 1–4 available Seats and expires after 480 s, a Fan never has more
+than four Seats per Match, the Quote is fixed (Group Discount 0/5/10/15 % for Seats
+together in one Row), a taken seat returns 409 with `conflictingSeatIds`, and the same
+`Idempotency-Key` returns the same Order (422 if the request differs).
+
+**Shapes the frontend fixed first** (deviation D-5):
+
+- `GET /matches/{id}/seatmap` returns 120 Blocks, each with `rowSeats` (seats per Row),
+  not one object per seat. Seat ids are derived: `<block>-R<row>-<seat>`.
+- `GET /matches/{id}/seat-states` returns one string per Block, one character per Seat
+  (`A`, `H`, `S`), and accepts `?blocks=101,102` to fetch only some Blocks.
+- `GET /auth/session` returns `{ fanId, verified, mobile? }`.
+- The mock's `POST /auth/otp/request` also returns `demoCode`, so the demo can show the
+  code on screen. The real service prints it to its console and never returns it.
 
 ## 4. Errors
 
@@ -64,12 +84,16 @@ action, never the HTTP status alone:
 | `type` | UI |
 |---|---|
 | `/problems/seats-unavailable` | mark the conflicting seats, keep the rest selected |
-| `/problems/hold-expired` (proposed) | release the selection, return to Block view |
-| `/problems/purchase-limit` (proposed) | explain the limit of four |
+| `/problems/hold-expired` | release the selection, return to Block view |
+| `/problems/purchase-limit` | explain the limit of four |
+| `/problems/booking-not-open` | show when booking opens |
+| `/problems/not-signed-in` | open the sign-in step |
+| `/problems/otp-invalid` | ask for the code again |
+| `/problems/order-exists` | go to that Order |
 | anything else | generic message with a retry |
 
-Only `seats-unavailable` exists in ARCHITECTURE §11 today. The two marked "proposed" are
-names the mock layer uses; the backend tickets (TKT-204, TKT-1003) confirm or rename them.
+Only `seats-unavailable` exists in ARCHITECTURE §11 today. The others are the names in
+`lib/api/problem.ts`; the backend tickets confirm or rename them.
 
 ## 5. Contracts the frontend fixed first
 

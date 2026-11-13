@@ -7,9 +7,6 @@ import "./globals.css";
 const display = Big_Shoulders({
   variable: "--font-big-shoulders",
   subsets: ["latin"],
-  // next/font has no size metrics for this font, so it cannot build a
-  // matched fallback; say so instead of letting the build warn.
-  adjustFontFallback: false,
 });
 
 const sans = Geist({
