@@ -40,20 +40,24 @@ _Avoid_: result
 ## Seats
 
 **Seat Map**:
-All the Seats of one Match, grouped into Sections, Rows and Blocks.
+All the Seats of one Match, grouped into Levels, Blocks and Rows.
 _Avoid_: layout, venue map
 
-**Section**:
-A named part of a stand, all of one Tier.
-_Avoid_: zone, area
+**Level**:
+One of the three floors of the stadium: lower, club or upper.
+_Avoid_: tier, deck, ring
 
 **Tier**:
-The class of a Seat: Standard or VIP.
-_Avoid_: category, class
+The price class of a Seat: Club Premium, Category 1, Category 2 or Category 3.
+_Avoid_: class, price band
 
 **Block**:
-The longest run of Seats in a row between two aisles, or between an aisle and the edge of the Section. Seats are adjacent only inside a Block.
-_Avoid_: segment
+A numbered group of Seats on one Level, with aisles on both sides (101–140, 201–240, 301–340).
+_Avoid_: section, zone, area, segment
+
+**Row**:
+One line of Seats inside a Block. Seats are adjacent only inside one Row.
+_Avoid_: line
 
 **Seat**:
 One place a Fan can buy for a Match.
@@ -80,7 +84,7 @@ A short, all-or-nothing lock of 1–4 Seats for one Fan while they pay; it expir
 _Avoid_: reservation, lock, cart
 
 **Run**:
-A row of consecutive free Seats inside one Block.
+Consecutive free Seats inside one Row.
 _Avoid_: streak, range
 
 **Orphan**:

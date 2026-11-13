@@ -186,6 +186,53 @@ never squeeze two sprints into one.
 
 ---
 
+## Frontend track (F-track) · EP-10 · ADR-0006
+
+A separate track where Claude writes the code and Anas reviews. It runs beside the
+backend sprints, whose contents and dates above are unchanged. Not pointed: it does not
+count toward backend velocity. Ticket IDs: `TKT-F<sprint><nn>`. Brief:
+`.claude/skills/animation.md`. Contracts: `docs/architecture/FRONTEND.md`.
+
+**Start here: TKT-F101.**
+
+### F1 — Foundation · Nov 14 – Nov 20, 2026
+| Ticket | Title |
+|---|---|
+| TKT-F101 | Design system: `stadium-design-system` skill, tokens in `globals.css`, fonts |
+| TKT-F102 | Typed API client + mock layer for the §11 paths (60K Seat Map generator, Holds, Quotes, Orders) |
+| TKT-F103 | App shell, match list, match page (server components) |
+
+### F2 — The Stadium · Nov 21 – Nov 27
+| Ticket | Title |
+|---|---|
+| TKT-F201 | Camp Nou bowl from the photos: three Levels, roof ring, facade, pitch, goals |
+| TKT-F202 | 60K instanced Seats in 120 Blocks + yellow mosaic (Spotify symbol, crest, "FC BARCELONA") |
+| TKT-F203 | Stadium view → Block view → Seat view, with camera flights and Seat State colours in Block view |
+| TKT-F204 | Mini-map, breadcrumbs, Tier legend filter, hover cards |
+
+### F3 — Booking · Nov 28 – Dec 4
+| Ticket | Title |
+|---|---|
+| TKT-F301 | Waiting Room screen with the Draw animation |
+| TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote |
+| TKT-F303 | Sign-in with the fake one-time code + demo checkout + Order status |
+| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium |
+
+### F4 — Atmosphere & Polish · Dec 5 – Dec 11
+| Ticket | Title |
+|---|---|
+| TKT-F401 | Night sky, floodlights, live match (22 players, referee, ball), fans on sold seats |
+| TKT-F402 | Live Seat State updates over SSE (mock stream) |
+| TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the 2D mini-map |
+| TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass |
+
+**Effect on backend tickets:** TKT-702, 703, 704, 801 and 803 keep their place and
+shrink to "replace the mock layer with the real API". The contracts the frontend fixed
+first are listed in [`FRONTEND-DEVIATIONS.md`](FRONTEND-DEVIATIONS.md) and are resolved
+when backend work resumes.
+
+---
+
 ## ⭐ Stretch goals (after M3, pick in any order)
 
 | ID | Title | Pts |
