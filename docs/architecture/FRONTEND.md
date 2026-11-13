@@ -19,11 +19,11 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 
 | Screen | Route | Calls | Path | Notes |
 |---|---|---|---|---|
-| Match list | `/` | `GET /matches` | server | revalidated on a timer |
-| Match page | `/matches/[id]` | `GET /matches/{id}` | server | shows when booking opens |
+| Match list | `/` | `GET /matches` · `GET /matches/{id}/occupancy` for the Match on sale | server | Matches cached for minutes; seats left refreshed every 10 s |
+| Match page | `/matches/[id]` | `GET /matches/{id}` · `…/seatmap` · `…/occupancy` | server | prebuilt per Match; seats left and Tier availability refreshed every 10 s |
 | Waiting Room | `/matches/[id]/waiting-room` | `POST /waiting-room/{id}/register` · `GET /waiting-room/{id}/position` (SSE) | browser | admission sets the Admission Token cookie |
 | Stadium | `/matches/[id]/seats` | `GET /matches/{id}/seatmap` | server | static layout, cached hard; ~60K seats sent as a compact array, not one object per seat |
-| | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view |
+| | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view, including this Fan's own Holds |
 | | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened |
 | | | `GET /stream/matches/{id}` (SSE) | browser | seat deltas after the snapshot |
 | Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → conflicting seat ids are shown on the map |
@@ -36,6 +36,11 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 
 Later, off the F-track: Steward scanner (`POST /gate/scans`, Sprint 11), Admin occupancy
 heatmap (Sprint 12), Rotating Credential (`GET /tickets/{id}/credential`, Sprint 11).
+
+Server reads live in `lib/queries.ts`, each a `"use cache"` function with a lifetime:
+Matches for minutes, the Seat Map for days, occupancy refreshed every 10 seconds. Pages
+are prebuilt and served from that cache, so a crowd on the match page costs the gateway
+one occupancy read every 10 seconds, not one per visitor.
 
 ## 3. One client, two adapters
 

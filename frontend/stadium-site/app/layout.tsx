@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Big_Shoulders, Geist, Geist_Mono } from "next/font/google";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 // Each font is self-hosted by next/font and exposed as a CSS variable.
@@ -39,7 +41,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
