@@ -13,6 +13,7 @@ done here.
 | D-4 | Seat id `<block>-R<row>-<seat>`, e.g. `214-R07-12` | `W-S03-R07-12` (stand, section, row, seat) | DATA-MODEL, ARCHITECTURE §11 example, TKT-105 | ☐ |
 | D-5 | Compact responses: the Seat Map is 120 Blocks with `rowSeats`; Seat States are one string per Block (`A`/`H`/`S`), with `?blocks=`; problem type names in `lib/api/problem.ts` | Seat Map as sections → rows → seats; one state per seat; only `seats-unavailable` named | ARCHITECTURE §11, TKT-105, TKT-203, TKT-204 | ☐ |
 | D-6 | Waiting Room status as one shape with four phases (`NOT_JOINED`, `WAITING`, `QUEUED`, `ADMITTED`), sent over the position stream and also readable once at `GET /waiting-room/{id}/status`; 403 `/problems/not-admitted` on Holds | only `register` and the `position` stream are listed; no payload shape; no one-shot read | ARCHITECTURE §11, TKT-605, TKT-701 | ☐ |
+| D-7 | The Match stream sends a named event `seat-delta` with `{ state: "A"\|"H"\|"S", seatIds: [...] }`, one event per state change batch; there is no sequence number, so the client reads the full Seat States on every `open` (including reconnects) and re-applies recent deltas on top. The stadium page counts "seats left" from Seat States instead of calling occupancy | `GET /stream/matches/{id}` is listed as "seat deltas" with no payload shape, no event name, and nothing said about reconnects | ARCHITECTURE §10–11 (`seat.held`, `seat.released`, `seat.sold` become one `seat-delta` shape), TKT-802 | ☐ |
 
 ## Decided in favour of the backend (no deviation)
 

@@ -23,9 +23,8 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 | Match page | `/matches/[id]` | `GET /matches/{id}` · `…/seatmap` · `…/occupancy` | server | prebuilt per Match; seats left and Tier availability refreshed every 10 s |
 | Waiting Room | `/matches/[id]/waiting-room` | `POST /waiting-room/{id}/register` · `GET /waiting-room/{id}/position` (SSE) · `GET /waiting-room/{id}/status` | browser | join once; the Draw gives a place; the place counts down; admission lets the Fan into the stadium |
 | Stadium | `/matches/[id]/seats` | `GET /matches/{id}/seatmap` | server | static layout, cached hard; ~60K seats sent as a compact array, not one object per seat |
-| | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view, including this Fan's own Holds |
-| | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened (`?blocks=`), and the whole stadium once on arrival, for the fans on sold seats |
-| | | `GET /stream/matches/{id}` (SSE) | browser | seat deltas after the snapshot |
+| | | `GET /stream/matches/{id}` (SSE) | browser | one stream per page; each `open` (first connect and every reconnect) triggers a full Seat States read, then `seat-delta` events keep it current |
+| | | `GET /matches/{id}/seat-states` | browser | the whole stadium on each stream `open`; one Block (`?blocks=`) when it is opened before that read lands, and after this Fan's own Hold changes. "Seats left" per Block is counted from these strings, so the stadium page no longer calls occupancy |
 | Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → the taken seats are named and dropped, the rest stay chosen |
 | | | `GET` / `DELETE /matches/{id}/holds/{holdId}` | browser | countdown runs from `expiresAt`, never from a local timer start; the Hold id is kept in `sessionStorage` so a reload finds the Hold again |
 | Sign-in | step inside checkout | `POST /auth/otp/request` · `POST /auth/otp/verify` | route handler | fake code, printed to the backend console |
@@ -129,9 +128,28 @@ Block or seat under the pointer changes.
 fifth height above it, the rest how side-on the seat is. When the backend returns a real
 score, `view-score.ts` is the one file to replace.
 
-**Seat States** for a Block are read in the browser when the Block is opened
-(`GET …/seat-states?blocks=214`), and that Block's seats change from the mosaic to their
-state colours.
+**Seat States** for a Block show when the Block is opened: its seats change from the
+mosaic to their state colours.
+
+**Live Seat States.** `api.watchSeats(matchId, { onOpen, onDelta })` opens the Match
+stream. The page reads the whole stadium's Seat States on every `open`, then applies each
+`seat-delta` (`{ state, seatIds }`) with `lib/stadium/live-seats.ts`. Deltas are buffered
+and taken in every 400 ms, so a busy second costs one render, not dozens. The deltas of
+the last 30 seconds are kept and applied again on top of any snapshot asked for before
+they arrived, so a snapshot that was on its way cannot undo a newer change. A seat that
+someone else takes pulses amber once in an open Block (no pulse with reduced motion). If
+one of the Fan's chosen seats is taken, it is named and dropped at once and the rest
+stay chosen; while a Hold is being made, its own answer reports that instead.
+
+**Other Fans in the mock.** `lib/api/mock/other-fans.ts` is the crowd the mock stream
+reports: about six Holds a second across the stadium, each 1–4 neighbouring available
+seats in one Row, decided 5–40 seconds later (70% bought, 30% let go). It never takes a
+seat this Fan holds, but can take one they have only chosen. Their seats are kept in the
+mock store, so they are there on the next visit, and a Hold on one gets the usual 409.
+They only act while a stream is open, and make up at most three seconds after a pause.
+Limits: the mock stream does not report this Fan's own Holds (the page reads those
+Blocks again itself); two open tabs each run the other Fans; and server-rendered pages
+(match list, match page) do not see them, because they live in the browser.
 
 **Fans.** Every sold seat has a seated fan, about 30,000 of them. The stadium view has
 none, so the mosaic stays clear; they rise into their seats when a Block is opened. Each

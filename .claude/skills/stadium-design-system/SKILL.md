@@ -34,7 +34,7 @@ second one becomes a ghost button. Text on orange is `signal-ink`.
 | Mode | When | Seat colours |
 |---|---|---|
 | **Mosaic** | Stadium view | `seat-blau`, `seat-grana`, and `seat-or` for the marks (Spotify symbol, crest, "FC BARCELONA"). Realistic: this is what the stadium looks like |
-| **State** | Block view and Seat view | available = its Tier colour · held = `state-held`, pulsing · sold = `state-sold` with a seated fan · yours = `state-mine` outline |
+| **State** | Block view and Seat view | available = its Tier colour · held = `state-held`, pulses once when someone takes it · sold = `state-sold` with a seated fan · yours = `state-mine` outline |
 
 The four Tier colours (`tier-premium`, `tier-1`, `tier-2`, `tier-3`) were chosen to stay
 apart from amber and from each other for colour-blind Fans, and they also colour the
