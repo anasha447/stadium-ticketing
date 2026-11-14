@@ -15,7 +15,9 @@ const ACTION =
   "inline-flex h-12 w-full items-center justify-center rounded-control bg-signal-500 px-6 font-semibold text-signal-ink transition-colors duration-fast hover:bg-signal-400 active:bg-signal-600 disabled:bg-night-800 disabled:text-flood-500";
 const QUIET =
   "h-11 rounded-control border border-night-700 px-4 text-sm font-semibold transition-colors duration-fast hover:bg-night-800 disabled:text-flood-500";
-const SMALL = "text-sm text-flood-300 underline-offset-4 hover:text-flood-50 hover:underline";
+// At least 44 px tall on a phone, so a finger can hit it.
+const SMALL =
+  "inline-flex min-h-11 items-center text-sm text-flood-300 underline-offset-4 hover:text-flood-50 hover:underline sm:min-h-0";
 
 const TONE: Record<CountdownTone, string> = {
   calm: "text-flood-50",

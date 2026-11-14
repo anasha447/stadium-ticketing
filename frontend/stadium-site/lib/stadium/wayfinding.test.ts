@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateSeatMap } from "@/lib/api/mock/seat-map";
-import { blockOutline, MAP_BOUNDS } from "./minimap";
+import { blockOutline, MAP_BOUNDS, mapStep } from "./minimap";
 import { viewReducer } from "./view";
 import { seatView } from "./view-score";
 
@@ -64,5 +64,51 @@ describe("view", () => {
   it("can go straight back to the stadium from a seat", () => {
     const seated = { kind: "seat", blockId: "214", row: 7, seat: 12 } as const;
     expect(viewReducer(seated, { type: "stadium" })).toEqual({ kind: "stadium" });
+  });
+});
+
+describe("mini-map arrow keys", () => {
+  const step = (from: string, key: Parameters<typeof mapStep>[2]) => mapStep(map.blocks, from, key);
+
+  it("go round the ring to the next Block on the same Level", () => {
+    const next = block(step("107", "ArrowRight"));
+    const before = block(step("107", "ArrowLeft"));
+    expect(next.level).toBe("LOWER");
+    expect(before.level).toBe("LOWER");
+    expect(next.position).toBe(block("107").position + 1);
+    expect(before.position).toBe(block("107").position - 1);
+  });
+
+  it("wrap round at the end of the ring", () => {
+    const last = map.blocks.find((b) => b.level === "CLUB" && b.position === 39)!;
+    const first = map.blocks.find((b) => b.level === "CLUB" && b.position === 0)!;
+    expect(step(last.id, "ArrowRight")).toBe(first.id);
+    expect(step(first.id, "ArrowLeft")).toBe(last.id);
+  });
+
+  it("reach every Block of a Level in 40 steps", () => {
+    const seen = new Set<string>();
+    let at = "101";
+    for (let i = 0; i < 40; i++) {
+      seen.add(at);
+      at = step(at, "ArrowRight");
+    }
+    expect(seen.size).toBe(40);
+    expect(at).toBe("101");
+  });
+
+  it("move out and in between Levels at the same place", () => {
+    const club = block(step("107", "ArrowUp"));
+    expect(club.level).toBe("CLUB");
+    expect(club.position).toBe(block("107").position);
+    expect(block(step(club.id, "ArrowUp")).level).toBe("UPPER");
+    expect(step(club.id, "ArrowDown")).toBe("107");
+  });
+
+  it("stay put past the outer and inner Levels, or from an unknown Block", () => {
+    const upper = step(step("107", "ArrowUp"), "ArrowUp");
+    expect(step(upper, "ArrowUp")).toBe(upper);
+    expect(step("107", "ArrowDown")).toBe("107");
+    expect(step("999", "ArrowRight")).toBe("999");
   });
 });

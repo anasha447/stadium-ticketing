@@ -58,6 +58,9 @@ export function Bowl({
   };
   const handleMove = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
+    // A finger dragging to spin the stadium is not hovering, and nothing
+    // would take the card away again when it lifts.
+    if (event.pointerType === "touch") return;
     onStandHover(toHit(event));
   };
 

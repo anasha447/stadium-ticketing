@@ -1,4 +1,5 @@
-import type { Block } from "@/lib/domain/types";
+import { BLOCKS_PER_LEVEL } from "@/lib/domain/stadium";
+import type { Block, Level } from "@/lib/domain/types";
 import { AISLE_SHARE, LEVEL_PROFILE, OUTER_DEPTH, ringPoint } from "./layout";
 
 // The stadium seen from straight above, for the mini-map: one outline per
@@ -33,4 +34,31 @@ export function blockOutline(block: Block): string {
   for (let i = 0; i <= EDGE_POINTS; i++) add(from + ((to - from) * i) / EDGE_POINTS, front);
   for (let i = EDGE_POINTS; i >= 0; i--) add(from + ((to - from) * i) / EDGE_POINTS, back);
   return `M${points.join("L")}Z`;
+}
+
+/** The Levels from the pitch outwards. */
+const LEVEL_ORDER: Level[] = ["LOWER", "CLUB", "UPPER"];
+
+/** The keys that move round the mini-map. */
+export type MapKey = "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown";
+
+/**
+ * Where an arrow key goes from a Block on the mini-map. Right goes clockwise
+ * round the ring and left the other way, wrapping at the end. Up goes one
+ * Level out, away from the pitch, and down one Level in, keeping the same
+ * place round the ring; at the outer or inner Level it stays put.
+ */
+export function mapStep(blocks: Block[], fromId: string, key: MapKey): string {
+  const from = blocks.find((block) => block.id === fromId);
+  if (!from) return fromId;
+  let level = from.level;
+  let position = from.position;
+  if (key === "ArrowRight" || key === "ArrowLeft") {
+    position = (position + (key === "ArrowRight" ? 1 : -1) + BLOCKS_PER_LEVEL) % BLOCKS_PER_LEVEL;
+  } else {
+    const index = LEVEL_ORDER.indexOf(level) + (key === "ArrowUp" ? 1 : -1);
+    if (index < 0 || index >= LEVEL_ORDER.length) return fromId;
+    level = LEVEL_ORDER[index];
+  }
+  return blocks.find((block) => block.level === level && block.position === position)?.id ?? fromId;
 }
