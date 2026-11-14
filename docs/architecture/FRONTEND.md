@@ -26,10 +26,10 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 | | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view, including this Fan's own Holds |
 | | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened |
 | | | `GET /stream/matches/{id}` (SSE) | browser | seat deltas after the snapshot |
-| Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → conflicting seat ids are shown on the map |
-| | | `GET` / `DELETE /matches/{id}/holds/{holdId}` | browser | countdown runs from `expiresAt`, never from a local timer start |
+| Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → the taken seats are named and dropped, the rest stay chosen |
+| | | `GET` / `DELETE /matches/{id}/holds/{holdId}` | browser | countdown runs from `expiresAt`, never from a local timer start; the Hold id is kept in `sessionStorage` so a reload finds the Hold again |
 | Sign-in | step inside checkout | `POST /auth/otp/request` · `POST /auth/otp/verify` | route handler | fake code, printed to the backend console |
-| Checkout | `/checkout/[holdId]` | `POST /orders` with `Idempotency-Key` | browser | the key is created once per Hold and reused on retry |
+| Checkout | `/matches/[id]/checkout/[holdId]` | `POST /orders` with `Idempotency-Key` | browser | the key is created once per Hold and reused on retry |
 | | | `GET /orders/{orderId}` | browser | polled until CONFIRMED or FAILED |
 | | | `POST /orders/{orderId}/payment-attempts` | browser | retry with another method |
 | My Tickets | `/tickets` | `GET /me/tickets` | server | per-Fan, not cached |
@@ -130,6 +130,15 @@ score, `view-score.ts` is the one file to replace.
 (`GET …/seat-states?blocks=214`), and that Block's seats change from the mosaic to their
 state colours.
 
+**Your seats and the Hold.** `lib/booking/selection.ts` holds the rules for choosing
+(up to four, no seat twice, and "pick seats together": the run of free neighbours
+nearest the middle of a Block). `lib/booking/countdown.ts` turns the Hold's `expiresAt`
+and the clock into the time left and its colour: amber under a minute, red under 15
+seconds. Before the Hold the drawer shows each seat's base price; after it, every
+number is read from the Quote. Picking seats together is a suggestion made in the
+browser, and the Hold is still made with the exact seat ids, so the backend's
+`mode=ADJACENT` is not used yet.
+
 ## 5. Errors
 
 Every failure is an RFC 9457 `ProblemDetail`. The client maps `type` to a message and an
@@ -138,7 +147,7 @@ action, never the HTTP status alone:
 | `type` | UI |
 |---|---|
 | `/problems/seats-unavailable` | mark the conflicting seats, keep the rest selected |
-| `/problems/hold-expired` | release the selection, return to Block view |
+| `/problems/hold-expired` | say the Hold ran out; "Choose again" puts the same seats back as chosen |
 | `/problems/purchase-limit` | explain the limit of four |
 | `/problems/booking-not-open` | show when booking opens |
 | `/problems/not-admitted` | send the Fan to the Waiting Room |
