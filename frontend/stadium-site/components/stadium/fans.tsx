@@ -200,13 +200,19 @@ export function Fans({
   const progress = useRef(0);
   const shown = openBlockId !== null;
 
+  // The stadium view draws no fans, and that is where the Match stream is
+  // busiest, so Seat State changes there build nothing. The fans of the last
+  // open Block stay as they were while they shrink away, and the next Block
+  // opened builds from the states of that moment.
+  const seen = openBlockId ? states : null;
   const fans = useMemo(() => {
-    const near = openBlockId ? blocksNear(blocks, seats, openBlockId) : new Set<string>();
+    if (!seen || !openBlockId) return null;
+    const near = blocksNear(blocks, seats, openBlockId);
     return {
-      near: buildFans(blocks, seats, states, (id) => near.has(id)),
-      far: buildFans(blocks, seats, states, (id) => !near.has(id)),
+      near: buildFans(blocks, seats, seen, (id) => near.has(id)),
+      far: buildFans(blocks, seats, seen, (id) => !near.has(id)),
     };
-  }, [blocks, seats, states, openBlockId]);
+  }, [blocks, seats, seen, openBlockId]);
 
   useLayoutEffect(() => {
     if (nearMesh.current) makeRoom(nearMesh.current, seats.count);
@@ -214,6 +220,7 @@ export function Fans({
   }, [seats]);
 
   useLayoutEffect(() => {
+    if (!fans) return;
     if (nearMesh.current) seat(nearMesh.current, fans.near);
     if (farMesh.current) seat(farMesh.current, fans.far);
   }, [fans, seats]);

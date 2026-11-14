@@ -7,7 +7,7 @@ export const COLOR = {
   night900: "#0b1020",
   flood50: "#f4f1ea",
   flood300: "#a7aec2",
-  flood500: "#6b7390",
+  flood500: "#7b83a0",
 
   seatBlau: "#1f4fa8",
   seatGrana: "#9e1b4b",
