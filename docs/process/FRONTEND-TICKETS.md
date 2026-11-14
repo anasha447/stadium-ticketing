@@ -4,7 +4,12 @@ Every ticket of the frontend track (F-track, ADR-0006), with what it delivered a
 it stands. The sprint plan is in [`ROADMAP.md`](ROADMAP.md); the brief is
 [`.claude/skills/animation.md`](../../.claude/skills/animation.md).
 
-Status: ✅ merged · 🔎 built, PR open · ▶ in progress · ☐ not started.
+Status: ✅ merged · 🔎 built, PR open · ▶ in progress · ⏸ put aside for now · ☐ not started.
+
+**Order changed on 14 Nov 2026** (Anas): after F302 the track goes to F401, F402 and
+F403 first, then comes back for F303 and F304, and ends with F404. So the order is
+F401 → F402 → F403 → F303 → F304 → F404. Until F303 is built, "Continue to checkout"
+opens a page that only shows the Hold's time left and total.
 
 ## Sprint F1 — Foundation
 
@@ -64,9 +69,9 @@ is looking, and a view score out of 100 with the distance to the pitch.
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
 | TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
-| TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | 🔎 | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
-| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ☐ | | |
-| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ☐ | | |
+| TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ✅ | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
+| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ⏸ after F403 | | |
+| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ⏸ after F303 | | |
 
 **TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
 button, sees how many are waiting and a countdown to the Draw, then gets a place and
@@ -88,10 +93,18 @@ total; paying comes with F303.
 
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
-| TKT-F401 | Night sky, floodlights, live match, fans on sold seats | ☐ | | |
+| TKT-F401 | Night sky, floodlights, live match, fans on sold seats | 🔎 | [#24](https://github.com/anasha447/stadium-ticketing/issues/24) | |
 | TKT-F402 | Live Seat State updates over SSE (mock stream) | ☐ | | |
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | ☐ | | |
-| TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ☐ | | |
+| TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ☐ last, after F304 | | |
+
+**TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
+edge, and a match on the pitch: 22 players, a referee and a ball on a loop. Every sold
+seat has a seated fan, in home colours everywhere except the south end, which wears the
+visiting blue and white. The stadium view keeps the bare mosaic; the fans rise into
+their seats when a Block is opened. Only the Blocks around the open one get the full
+figure, which keeps the cost of 30,000 fans to about an eighth of a frame, and the seats
+right around the Fan's own are left clear so heads do not cover the pitch.
 
 ## Carried forward
 
@@ -104,7 +117,10 @@ should pick it up.
 | Reduced motion is coded (cuts for flights, no auto-rotation) but not checked on a device | F203 | F403 |
 | The mini-map is pointer-only | F204 | F403 |
 | "Pick seats together" is worked out in the browser; the backend's `mode=ADJACENT` is still not in the mock or used | F102, F302 | when the gateway exists |
-| Non-colour cues for seat state (pulse for held, fans on sold). The "yours" colour is done | F203 | F401, F402 |
+| A held seat still differs from the others by colour only (it should pulse). Sold seats have their fan, "yours" has its colour | F203 | F402 |
+| The LED boards round the pitch and the two scoreboards from the brief are in no ticket | F401 | F404, if wanted |
+| "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F403 |
+| The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | F404 |
 | "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F403 |
 | The taken-seat notice was checked by faking another Hold in the mock's storage; nothing in the mock takes seats on its own yet | F302 | F402 |
 | Dragging during a camera flight waits for the landing | F203 | F404, if it feels wrong in use |

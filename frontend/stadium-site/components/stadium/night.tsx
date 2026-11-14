@@ -1,0 +1,185 @@
+"use client";
+
+import { useLayoutEffect, useMemo, useRef } from "react";
+import {
+  AdditiveBlending,
+  BackSide,
+  BufferGeometry,
+  CanvasTexture,
+  Color,
+  Float32BufferAttribute,
+  type InstancedMesh,
+  Object3D,
+  SphereGeometry,
+} from "three";
+import { BLOCKS_PER_LEVEL } from "@/lib/domain/stadium";
+import { COLOR } from "@/lib/design/tokens";
+import { FACADE_HEIGHT, ringPoint, ROOF_INNER_DEPTH } from "@/lib/stadium/layout";
+
+// The night around the stadium: a dark sky with stars, and the floodlights
+// under the edge of the roof. Nothing here moves, so it costs the same with
+// reduced motion as without.
+
+const SKY_RADIUS = 2600;
+const STARS = 1600;
+
+/** A small repeatable random source, so the sky is the same on every visit. */
+function randomFrom(seed: number) {
+  let state = seed;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** The sky as the inside of a ball: a faint glow along the horizon, black overhead. */
+function skyDome() {
+  const dome = new SphereGeometry(SKY_RADIUS, 32, 24);
+  const horizon = new Color(COLOR.night900).lerp(new Color(COLOR.sceneFacade), 0.4);
+  const overhead = new Color(COLOR.night950);
+  const below = new Color(COLOR.night900);
+  const positions = dome.getAttribute("position");
+  const colours = new Float32Array(positions.count * 3);
+  const colour = new Color();
+  for (let i = 0; i < positions.count; i++) {
+    const height = positions.getY(i) / SKY_RADIUS;
+    if (height < 0) colour.copy(below);
+    else colour.copy(horizon).lerp(overhead, Math.min(1, height * 3) ** 0.6);
+    colour.toArray(colours, i * 3);
+  }
+  dome.setAttribute("color", new Float32BufferAttribute(colours, 3));
+  return dome;
+}
+
+/** Stars over the upper half of the sky, some brighter than others. */
+function starField() {
+  const random = randomFrom(1899);
+  const positions = new Float32Array(STARS * 3);
+  const colours = new Float32Array(STARS * 3);
+  const white = new Color(COLOR.flood50);
+  for (let i = 0; i < STARS; i++) {
+    // Even over the dome, and kept off the horizon where the glow is.
+    const height = 0.06 + 0.94 * random();
+    const around = random() * Math.PI * 2;
+    const flat = Math.sqrt(1 - height * height);
+    const radius = SKY_RADIUS * 0.95;
+    positions.set(
+      [Math.cos(around) * flat * radius, height * radius, Math.sin(around) * flat * radius],
+      i * 3,
+    );
+    // Most stars are faint; a few stand out.
+    const brightness = 0.25 + 0.75 * random() ** 3;
+    colours.set([white.r * brightness, white.g * brightness, white.b * brightness], i * 3);
+  }
+  const stars = new BufferGeometry();
+  stars.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  stars.setAttribute("color", new Float32BufferAttribute(colours, 3));
+  return stars;
+}
+
+export function Sky() {
+  const dome = useMemo(() => skyDome(), []);
+  const stars = useMemo(() => starField(), []);
+  return (
+    <group>
+      <mesh geometry={dome} raycast={() => null}>
+        <meshBasicMaterial vertexColors side={BackSide} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <points geometry={stars} raycast={() => null}>
+        <pointsMaterial
+          vertexColors
+          size={2.4}
+          sizeAttenuation={false}
+          transparent
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+    </group>
+  );
+}
+
+/** Height of the lamps: just under the edge of the roof. */
+const LAMP_HEIGHT = FACADE_HEIGHT + 4.1;
+const LAMP_DEPTH = ROOF_INNER_DEPTH - 0.8;
+
+/** A soft round glow, bright in the middle and gone at the edge. */
+function glowTexture() {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d")!;
+  const glow = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  glow.addColorStop(0, COLOR.flood50);
+  glow.addColorStop(0.25, `${COLOR.flood50}99`);
+  glow.addColorStop(1, `${COLOR.flood50}00`);
+  context.fillStyle = glow;
+  context.fillRect(0, 0, size, size);
+  return new CanvasTexture(canvas);
+}
+
+/**
+ * One bank of lamps over each Block position, all the way round, as on the
+ * real roof. Each is a bright bar with a glow around it. The light that
+ * falls on the stadium comes from the scene's own lights.
+ */
+export function Floodlights() {
+  const bars = useRef<InstancedMesh>(null);
+  const glow = useMemo(() => glowTexture(), []);
+
+  const lamps = useMemo(
+    () =>
+      Array.from({ length: BLOCKS_PER_LEVEL }, (_, i) => ringPoint(i + 0.5, LAMP_DEPTH)),
+    [],
+  );
+  const glowPoints = useMemo(() => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(
+        lamps.flatMap(({ x, z, nx, nz }) => [x - nx * 0.6, LAMP_HEIGHT, z - nz * 0.6]),
+        3,
+      ),
+    );
+    return geometry;
+  }, [lamps]);
+
+  useLayoutEffect(() => {
+    const instanced = bars.current;
+    if (!instanced) return;
+    const bar = new Object3D();
+    lamps.forEach(({ x, z, nx, nz }, i) => {
+      bar.position.set(x, LAMP_HEIGHT, z);
+      // Long side along the roof edge, face towards the pitch.
+      bar.rotation.set(0, Math.atan2(-nx, -nz), 0);
+      bar.updateMatrix();
+      instanced.setMatrixAt(i, bar.matrix);
+    });
+    instanced.instanceMatrix.needsUpdate = true;
+    instanced.computeBoundingSphere();
+  }, [lamps]);
+
+  return (
+    <group>
+      <instancedMesh ref={bars} args={[undefined, undefined, lamps.length]} raycast={() => null}>
+        <boxGeometry args={[7, 0.9, 0.5]} />
+        <meshBasicMaterial color={COLOR.flood50} toneMapped={false} />
+      </instancedMesh>
+      <points geometry={glowPoints} raycast={() => null}>
+        <pointsMaterial
+          map={glow}
+          color={COLOR.flood50}
+          size={22}
+          sizeAttenuation
+          transparent
+          opacity={0.55}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+    </group>
+  );
+}

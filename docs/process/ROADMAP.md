@@ -211,6 +211,9 @@ Ticket by ticket, with status and links: [`FRONTEND-TICKETS.md`](FRONTEND-TICKET
 | TKT-F204 | Mini-map, breadcrumbs, Tier legend filter, hover cards |
 
 ### F3 — Booking · Nov 28 – Dec 4
+
+_Order changed on 14 Nov 2026: F303 and F304 wait until F401–F403 are done; F404 stays
+last. See `FRONTEND-TICKETS.md`._
 | Ticket | Title |
 |---|---|
 | TKT-F301 | Waiting Room screen with the Draw animation |

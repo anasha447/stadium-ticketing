@@ -120,6 +120,10 @@ export function StadiumExperience({
   const reducedMotion = usePrefersReducedMotion();
   /** Seat States of the Blocks opened so far, by Block id. */
   const [states, setStates] = useState<Record<string, string>>({});
+  /** Seat States of the whole stadium, read once, so every sold seat can have its fan. */
+  const [crowd, setCrowd] = useState<Record<string, string>>({});
+  /** With reduced motion the match stands still until the Fan starts it. */
+  const [matchStarted, setMatchStarted] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   /** Seats left in every Block, for the hover card. */
   const [counts, setCounts] = useState<Record<string, SeatCounts>>({});
@@ -150,6 +154,21 @@ export function StadiumExperience({
       })
       .catch(() => {
         // The hover card simply leaves out "seats left".
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getSeatStates(matchId)
+      .then((result) => {
+        if (!cancelled) setCrowd(result.blocks);
+      })
+      .catch(() => {
+        // The stands simply stay empty.
       });
     return () => {
       cancelled = true;
@@ -216,6 +235,9 @@ export function StadiumExperience({
     () => (blockId && blockStates ? { blockId, states: blockStates } : null),
     [blockId, blockStates],
   );
+
+  // The Blocks the Fan has opened are fresher than the first read, so they win.
+  const sold = useMemo(() => ({ ...crowd, ...states }), [crowd, states]);
 
   /** The Fan's own seats: the ones in their Hold, or the ones chosen so far. */
   const mine = useMemo(() => (hold ? seatsOf(hold) : chosen), [hold, chosen]);
@@ -407,9 +429,11 @@ export function StadiumExperience({
           blocks={blocks}
           view={view}
           open={open}
+          sold={sold}
           litBlockId={litBlockId}
           shownTier={shownTier}
           mine={mine}
+          matchPlaying={!reducedMotion || matchStarted}
           reducedMotion={reducedMotion}
           heading={heading}
           onStandClick={handleStandClick}
@@ -463,6 +487,16 @@ export function StadiumExperience({
               Click a Block to fly in. Drag to spin the stadium, scroll or pinch
               to zoom.
             </p>
+            {reducedMotion && (
+              <button
+                type="button"
+                className={STRONG}
+                aria-pressed={matchStarted}
+                onClick={() => setMatchStarted((on) => !on)}
+              >
+                {matchStarted ? "Pause the match" : "Play the match"}
+              </button>
+            )}
           </>
         )}
 

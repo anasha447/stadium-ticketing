@@ -24,7 +24,7 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 | Waiting Room | `/matches/[id]/waiting-room` | `POST /waiting-room/{id}/register` · `GET /waiting-room/{id}/position` (SSE) · `GET /waiting-room/{id}/status` | browser | join once; the Draw gives a place; the place counts down; admission lets the Fan into the stadium |
 | Stadium | `/matches/[id]/seats` | `GET /matches/{id}/seatmap` | server | static layout, cached hard; ~60K seats sent as a compact array, not one object per seat |
 | | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view, including this Fan's own Holds |
-| | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened |
+| | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened (`?blocks=`), and the whole stadium once on arrival, for the fans on sold seats |
 | | | `GET /stream/matches/{id}` (SSE) | browser | seat deltas after the snapshot |
 | Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → the taken seats are named and dropped, the rest stay chosen |
 | | | `GET` / `DELETE /matches/{id}/holds/{holdId}` | browser | countdown runs from `expiresAt`, never from a local timer start; the Hold id is kept in `sessionStorage` so a reload finds the Hold again |
@@ -100,9 +100,12 @@ lib/stadium/view.ts       which view the Fan is in (stadium, Block, seat) and ho
 lib/stadium/camera.ts     where the camera stands in each view, and how long a flight takes
 lib/stadium/view-score.ts the view score of a seat (0 to 100) and its distance to the pitch
 lib/stadium/minimap.ts    the outline of each Block seen from above, for the mini-map
+lib/stadium/fans.ts       one fan per sold seat, and which Blocks count as near the open one
+lib/stadium/match-play.ts where the 22 players, the referee and the ball are at a given second
 lib/design/tokens.ts      the colours 3D code may use, checked against globals.css by a test
-components/stadium/       the React Three Fiber scene: bowl, pitch, seats, camera rig, and the
-                          StadiumExperience component that owns the view and the panel
+components/stadium/       the React Three Fiber scene: bowl, pitch, seats, fans, the match, the
+                          night sky and floodlights, camera rig, and the StadiumExperience
+                          component that owns the view and the panel
 ```
 
 The Seat Map says how many Rows and seats a Block has; `layout.ts` says where they are.
@@ -129,6 +132,20 @@ score, `view-score.ts` is the one file to replace.
 **Seat States** for a Block are read in the browser when the Block is opened
 (`GET …/seat-states?blocks=214`), and that Block's seats change from the mosaic to their
 state colours.
+
+**Fans.** Every sold seat has a seated fan, about 30,000 of them. The stadium view has
+none, so the mosaic stays clear; they rise into their seats when a Block is opened. Each
+fan uses their seat's own transform. Drawing all of them in full added about 40% to a
+frame on integrated graphics, so only Blocks within 45 m of the open one get the full
+figure and the rest get a single block with a head-coloured top, which brought that down
+to about 12%. In seat view the fans within 1.3 m of the Fan's own seat are left out, so
+the heads in the row in front do not cover the pitch. The south end wears the visiting
+colours, everyone else the home colours.
+
+**The match** is a loop, not a simulation: `matchAt(seconds)` places everyone from the
+time alone. The ball drifts on slow waves, each side keeps its shape and slides towards
+the ball, and whoever is close goes to it. Nobody scores and there is no scoreboard.
+With reduced motion it is a still picture until the Fan presses "Play the match".
 
 **Your seats and the Hold.** `lib/booking/selection.ts` holds the rules for choosing
 (up to four, no seat twice, and "pick seats together": the run of free neighbours

@@ -42,7 +42,8 @@ legend. A state is never carried by colour alone: held pulses, sold has a figure
 has an outline, and the hover card says the state in words.
 
 **4. The scene.** The `scene-*` tokens are what the stadium is built from in 3D: concrete,
-facade, roof, turf. Three.js cannot read Tailwind classes, so 3D code takes every colour
+facade, roof, turf, and the people in it (the visiting kit, the keepers, skin). Home fans
+and players wear `seat-blau` and `seat-grana`. Three.js cannot read Tailwind classes, so 3D code takes every colour
 from `frontend/stadium-site/lib/design/tokens.ts`, which mirrors `globals.css` and has a
 test that fails if the two drift apart. A hex value written straight into a 3D component
 is the same mistake as one in a class name.
