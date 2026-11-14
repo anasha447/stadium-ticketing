@@ -6,6 +6,7 @@ import type {
   SeatState,
   Session,
   Ticket,
+  WaitingRoomStatus,
 } from "@/lib/domain/types";
 import { parseSeatId, seatOffset } from "@/lib/domain/seat-id";
 import { PROBLEM, problem } from "../problem";
@@ -22,10 +23,21 @@ import type { MockState, MockStore, StoredOrder } from "./store";
 //   - a Quote is fixed when the Hold is made
 //   - a Fan can never have more than four seats for a Match
 //   - the same Idempotency-Key never creates a second Order
+//   - a Hold needs an admission from the Waiting Room
 
 export const HOLD_TTL_MS = 480_000; // 8 minutes, as in DESIGN §3
 export const MAX_SEATS = 4;
 const PAYMENT_MS = 1_500;
+
+// The Waiting Room, at demo size. The real one admits at a measured rate
+// starting at 200 Fans a second (DESIGN section 1); the crowd here is small
+// enough that the longest wait is 18 seconds.
+export const WAITING_FANS = 3_600;
+export const ADMITTED_PER_SECOND = 200;
+/** How long after a Fan joins the Draw happens. In real life it is at the booking-open time. */
+export const DRAW_DELAY_MS = 6_000;
+/** How long an admission lasts. */
+export const ADMISSION_MS = 30 * 60_000;
 const OTP_TTL_MS = 300_000;
 
 export interface MockApiOptions {
@@ -34,12 +46,17 @@ export interface MockApiOptions {
   now?: () => number;
   /** Pretend network delay, so loading states show up in the demo. */
   latencyMs?: number;
+  /** A number from 0 up to, not including, 1. Tests pass their own to fix the Draw. */
+  random?: () => number;
 }
+
+const fairRandom = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
 
 export function createMockApi({
   store,
   now = Date.now,
   latencyMs = 0,
+  random = fairRandom,
 }: MockApiOptions): StadiumApi {
   const newId = () => crypto.randomUUID();
 
@@ -95,6 +112,42 @@ export function createMockApi({
     }
   }
 
+  /** Where this Fan is in a Match's Waiting Room, worked out from the clock. */
+  function waitingRoom(state: MockState, matchId: number): WaitingRoomStatus {
+    const place = state.waitingRoom?.[matchId];
+    if (!place) return { phase: "NOT_JOINED", waiting: WAITING_FANS };
+    if (now() < place.drawAt) {
+      return {
+        phase: "WAITING",
+        waiting: WAITING_FANS,
+        drawAt: new Date(place.drawAt).toISOString(),
+      };
+    }
+    // After the Draw the queue moves at a steady rate, so the place a Fan
+    // drew decides exactly when their turn comes.
+    const admittedAt = place.drawAt + (place.drawnPosition / ADMITTED_PER_SECOND) * 1000;
+    if (now() < admittedAt) {
+      return {
+        phase: "QUEUED",
+        // Multiply before dividing: whole numbers stay exact, so a Fan is
+        // never shown one place further back than they are.
+        position: Math.max(1, Math.ceil(((admittedAt - now()) * ADMITTED_PER_SECOND) / 1000)),
+        drawnPosition: place.drawnPosition,
+        waiting: WAITING_FANS,
+        admittedPerSecond: ADMITTED_PER_SECOND,
+      };
+    }
+    if (now() < admittedAt + ADMISSION_MS) {
+      return {
+        phase: "ADMITTED",
+        drawnPosition: place.drawnPosition,
+        admissionExpiresAt: new Date(admittedAt + ADMISSION_MS).toISOString(),
+      };
+    }
+    delete state.waitingRoom![matchId];
+    return { phase: "NOT_JOINED", waiting: WAITING_FANS };
+  }
+
   function requireMatch(matchId: number): MockMatch {
     const match = findMatch(matchId);
     if (!match) throw problem(404, PROBLEM.notFound, "Match not found");
@@ -143,6 +196,43 @@ export function createMockApi({
     listMatches: () => run(() => MATCHES.map(toMatch)),
 
     getMatch: (matchId) => run(() => toMatch(requireMatch(matchId))),
+
+    joinWaitingRoom: (matchId) =>
+      run((state) => {
+        const match = requireMatch(matchId);
+        if (match.status !== "BOOKING_OPEN") {
+          throw problem(409, PROBLEM.bookingNotOpen, "Booking is not open for this Match");
+        }
+        // One place per Fan: joining again changes nothing.
+        if (waitingRoom(state, matchId).phase === "NOT_JOINED") {
+          state.waitingRoom ??= {};
+          state.waitingRoom[matchId] = {
+            drawAt: now() + DRAW_DELAY_MS,
+            // The Draw: every place is equally likely, whenever the Fan joined.
+            drawnPosition: 1 + Math.floor(random() * WAITING_FANS),
+          };
+        }
+        return waitingRoom(state, matchId);
+      }),
+
+    getWaitingRoom: (matchId) =>
+      run((state) => {
+        requireMatch(matchId);
+        return waitingRoom(state, matchId);
+      }),
+
+    watchWaitingRoom: (matchId, onStatus) => {
+      // The gateway pushes updates; the mock looks at the clock four times a second.
+      const look = () => {
+        const state = load();
+        const status = waitingRoom(state, matchId);
+        store.save(state);
+        onStatus(status);
+      };
+      look();
+      const timer = setInterval(look, 250);
+      return () => clearInterval(timer);
+    },
 
     getSeatMap: (matchId) =>
       run(() => {
@@ -202,6 +292,10 @@ export function createMockApi({
         const match = requireMatch(matchId);
         if (match.status !== "BOOKING_OPEN") {
           throw problem(409, PROBLEM.bookingNotOpen, "Booking is not open for this Match");
+        }
+
+        if (waitingRoom(state, matchId).phase !== "ADMITTED") {
+          throw problem(403, PROBLEM.notAdmitted, "Go through the Waiting Room first");
         }
 
         const seatIds = [...new Set(request.seatIds)].sort();

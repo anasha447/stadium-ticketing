@@ -21,7 +21,7 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 |---|---|---|---|---|
 | Match list | `/` | `GET /matches` · `GET /matches/{id}/occupancy` for the Match on sale | server | Matches cached for minutes; seats left refreshed every 10 s |
 | Match page | `/matches/[id]` | `GET /matches/{id}` · `…/seatmap` · `…/occupancy` | server | prebuilt per Match; seats left and Tier availability refreshed every 10 s |
-| Waiting Room | `/matches/[id]/waiting-room` | `POST /waiting-room/{id}/register` · `GET /waiting-room/{id}/position` (SSE) | browser | admission sets the Admission Token cookie |
+| Waiting Room | `/matches/[id]/waiting-room` | `POST /waiting-room/{id}/register` · `GET /waiting-room/{id}/position` (SSE) · `GET /waiting-room/{id}/status` | browser | join once; the Draw gives a place; the place counts down; admission lets the Fan into the stadium |
 | Stadium | `/matches/[id]/seats` | `GET /matches/{id}/seatmap` | server | static layout, cached hard; ~60K seats sent as a compact array, not one object per seat |
 | | | `GET /matches/{id}/occupancy` | browser | "seats left" per Block in stadium view, including this Fan's own Holds |
 | | | `GET /matches/{id}/seat-states` | browser | snapshot when a Block is opened |
@@ -41,6 +41,12 @@ Server reads live in `lib/queries.ts`, each a `"use cache"` function with a life
 Matches for minutes, the Seat Map for days, occupancy refreshed every 10 seconds. Pages
 are prebuilt and served from that cache, so a crowd on the match page costs the gateway
 one occupancy read every 10 seconds, not one per visitor.
+
+**The way in.** "Choose your seats" leads to the Waiting Room, not to the stadium. The
+stadium page asks for the Fan's status first and sends anyone who is not admitted back
+to the Waiting Room. That check is a courtesy: the rule itself is enforced where it
+matters, on `POST …/holds`, which answers 403 `/problems/not-admitted` without an
+admission.
 
 ## 3. One client, two adapters
 
@@ -135,6 +141,7 @@ action, never the HTTP status alone:
 | `/problems/hold-expired` | release the selection, return to Block view |
 | `/problems/purchase-limit` | explain the limit of four |
 | `/problems/booking-not-open` | show when booking opens |
+| `/problems/not-admitted` | send the Fan to the Waiting Room |
 | `/problems/not-signed-in` | open the sign-in step |
 | `/problems/otp-invalid` | ask for the code again |
 | `/problems/order-exists` | go to that Order |

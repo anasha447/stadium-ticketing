@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StadiumExperience, StadiumLoading } from "@/components/stadium/stadium-experience";
+import { AdmissionGate } from "@/components/waiting-room/admission-gate";
 import { getMatch, getMatches, getSeatMap } from "@/lib/queries";
 
 type Props = PageProps<"/matches/[id]/seats">;
@@ -36,11 +37,13 @@ async function Stadium({ params }: { params: Props["params"] }) {
   const seatMap = await getSeatMap(matchId);
 
   return (
-    <StadiumExperience
-      matchId={matchId}
-      title={`${match.home.shortName} v ${match.away.shortName}`}
-      blocks={seatMap.blocks}
-      currency={seatMap.currency}
-    />
+    <AdmissionGate matchId={matchId} waiting={<StadiumLoading />}>
+      <StadiumExperience
+        matchId={matchId}
+        title={`${match.home.shortName} v ${match.away.shortName}`}
+        blocks={seatMap.blocks}
+        currency={seatMap.currency}
+      />
+    </AdmissionGate>
   );
 }

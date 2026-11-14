@@ -3,7 +3,7 @@ import { formatSeatId } from "@/lib/domain/seat-id";
 import type { SeatState } from "@/lib/domain/types";
 import { ApiProblem, PROBLEM } from "../problem";
 import type { StadiumApi } from "../stadium-api";
-import { createMockApi, HOLD_TTL_MS } from "./mock-api";
+import { createMockApi, DRAW_DELAY_MS, HOLD_TTL_MS } from "./mock-api";
 import { generateSeatMap } from "./seat-map";
 import { soldSeats } from "./sold-seats";
 import { createMemoryStore } from "./store";
@@ -66,9 +66,12 @@ async function signIn() {
   await api.verifyOtp(MOBILE, demoCode!);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   clock = Date.parse("2026-11-14T10:00:00Z");
-  api = createMockApi({ store: createMemoryStore(), now: () => clock });
+  // The Draw gives this Fan the first place, so they are admitted at once.
+  api = createMockApi({ store: createMemoryStore(), now: () => clock, random: () => 0 });
+  await api.joinWaitingRoom(MATCH);
+  clock += DRAW_DELAY_MS + 1_000;
 });
 
 describe("catalog", () => {

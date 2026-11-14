@@ -11,6 +11,7 @@ import type {
   SeatStates,
   Session,
   Ticket,
+  WaitingRoomStatus,
 } from "@/lib/domain/types";
 
 /**
@@ -22,6 +23,16 @@ export interface StadiumApi {
   // catalog
   listMatches(): Promise<Match[]>;
   getMatch(matchId: number): Promise<Match>;
+
+  // gateway: the Waiting Room
+  /** Joining twice keeps the same place. */
+  joinWaitingRoom(matchId: number): Promise<WaitingRoomStatus>;
+  getWaitingRoom(matchId: number): Promise<WaitingRoomStatus>;
+  /**
+   * Calls back with the Fan's status now and every time it changes.
+   * Returns a function that stops it.
+   */
+  watchWaitingRoom(matchId: number, onStatus: (status: WaitingRoomStatus) => void): () => void;
 
   // inventory
   getSeatMap(matchId: number): Promise<SeatMap>;

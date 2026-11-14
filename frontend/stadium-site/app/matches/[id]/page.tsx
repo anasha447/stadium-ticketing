@@ -51,7 +51,7 @@ export default async function MatchPage({ params }: Props) {
         {open ? (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
-              href={`/matches/${match.id}/seats`}
+              href={`/matches/${match.id}/waiting-room`}
               className="inline-flex h-12 items-center rounded-control bg-signal-500 px-6 font-semibold text-signal-ink transition-colors duration-fast hover:bg-signal-400 active:bg-signal-600"
             >
               Choose your seats

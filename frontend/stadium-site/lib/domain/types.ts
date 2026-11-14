@@ -147,3 +147,24 @@ export interface OtpChallenge {
   /** Only the mock sends this, so the demo can show the code on screen. */
   demoCode?: string;
 }
+
+/**
+ * Where a Fan is in the Waiting Room of a Match.
+ * NOT_JOINED: has not joined, or their admission ran out.
+ * WAITING: joined, the Draw has not happened yet.
+ * QUEUED: the Draw gave them a place; Fans ahead of them are being let in.
+ * ADMITTED: they may book until the admission runs out.
+ */
+export type WaitingRoomStatus =
+  | { phase: "NOT_JOINED"; waiting: number }
+  | { phase: "WAITING"; waiting: number; drawAt: string }
+  | {
+      phase: "QUEUED";
+      /** Fans still ahead, counting this Fan: 1 means next. */
+      position: number;
+      /** The place the Draw gave them. */
+      drawnPosition: number;
+      waiting: number;
+      admittedPerSecond: number;
+    }
+  | { phase: "ADMITTED"; drawnPosition: number; admissionExpiresAt: string };

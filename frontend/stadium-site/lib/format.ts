@@ -36,6 +36,11 @@ export const formatShortDay = (iso: string) =>
 /** "21:00" */
 export const formatTime = (iso: string) => timeFormat.format(new Date(iso));
 
+const clockFormat = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" });
+
+/** "21:34", in the Fan's own time zone. For things that happen to the Fan, not at the stadium. */
+export const formatClock = (iso: string) => clockFormat.format(new Date(iso));
+
 /** "60,560" */
 export const formatCount = (count: number) => count.toLocaleString(LOCALE);
 

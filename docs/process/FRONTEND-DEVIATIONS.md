@@ -12,6 +12,7 @@ done here.
 | D-3 | Four **Tiers**: Club Premium, Category 1, Category 2, Category 3. New term **Level**: lower, club, upper | Tier is `STANDARD` or `VIP`; `vip_count` column | DATA-MODEL (`tier` CHECK, `vip_count`), TKT-104, TKT-303 | ☐ |
 | D-4 | Seat id `<block>-R<row>-<seat>`, e.g. `214-R07-12` | `W-S03-R07-12` (stand, section, row, seat) | DATA-MODEL, ARCHITECTURE §11 example, TKT-105 | ☐ |
 | D-5 | Compact responses: the Seat Map is 120 Blocks with `rowSeats`; Seat States are one string per Block (`A`/`H`/`S`), with `?blocks=`; problem type names in `lib/api/problem.ts` | Seat Map as sections → rows → seats; one state per seat; only `seats-unavailable` named | ARCHITECTURE §11, TKT-105, TKT-203, TKT-204 | ☐ |
+| D-6 | Waiting Room status as one shape with four phases (`NOT_JOINED`, `WAITING`, `QUEUED`, `ADMITTED`), sent over the position stream and also readable once at `GET /waiting-room/{id}/status`; 403 `/problems/not-admitted` on Holds | only `register` and the `position` stream are listed; no payload shape; no one-shot read | ARCHITECTURE §11, TKT-605, TKT-701 | ☐ |
 
 ## Decided in favour of the backend (no deviation)
 
