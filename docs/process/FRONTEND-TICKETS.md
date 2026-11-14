@@ -94,7 +94,7 @@ total; paying comes with F303.
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
 | TKT-F401 | Night sky, floodlights, live match, fans on sold seats | ✅ | [#24](https://github.com/anasha447/stadium-ticketing/issues/24) | [#25](https://github.com/anasha447/stadium-ticketing/pull/25) |
-| TKT-F402 | Live Seat State updates over SSE (mock stream) | 🔎 | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | |
+| TKT-F402 | Live Seat State updates over SSE (mock stream) | 🔎 | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | [#27](https://github.com/anasha447/stadium-ticketing/pull/27) |
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | ☐ | | |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ☐ last, after F304 | | |
 
