@@ -24,6 +24,9 @@ import { SEAT_COLOURS, type SeatInstances } from "@/lib/stadium/seats";
 // colour, held in amber, sold in grey. On top of either look a Block can be
 // lit (the pointer is over it) or dimmed (the legend is showing another Tier).
 // The Fan's own seats, chosen or held, are always shown in the "yours" colour.
+//
+// Seat States are live. When someone else takes a seat in the open Block it
+// flashes a bright amber once and settles into the held colour.
 
 const TIER_COLOUR: Record<Tier, ColorToken> = {
   CLUB_PREMIUM: "tierPremium",
@@ -36,6 +39,11 @@ const TIER_COLOUR: Record<Tier, ColorToken> = {
 const FADE_SECONDS = 0.3;
 /** Lighting up under the pointer is feedback, so it is quicker. */
 const LIGHT_SECONDS = 0.12;
+
+/** How long a seat that was just taken needs to settle from its flash. */
+const PULSE_SECONDS = 0.7;
+/** How far the flash is from the held colour towards white. */
+const PULSE = 0.75;
 
 /** How much of its colour a dimmed Block keeps. */
 const DIMMED = 0.2;
@@ -135,6 +143,7 @@ export function Seats({
     if (!colours) return;
 
     const yours = new Color(COLOR.stateMine);
+    const flash = new Color(COLOR.stateHeld).lerp(new Color(COLOR.flood50), PULSE);
     for (const block of blocks) {
       const isOpen = open?.blockId === block.id;
       const dimmed = !isOpen && shownTier !== null && block.tier !== shownTier;
@@ -146,6 +155,8 @@ export function Seats({
       const base = `${isOpen ? open.states : "mosaic"}|${dimmed ? "dim" : ""}|${own.join(",")}`;
       const look = `${base}|${lit ? "lit" : ""}`;
       const before = looks.current.get(block.id) ?? "mosaic|||";
+      /** The Seat States this Block was showing, if it was already open. */
+      const shown = before.slice(0, before.indexOf("|"));
       if (look === before) continue;
       looks.current.set(block.id, look);
 
@@ -171,11 +182,22 @@ export function Seats({
 
       // If only the light went on or off, change quickly: it is feedback.
       const onlyLight = before.startsWith(`${base}|`);
-      const seconds = onlyLight ? LIGHT_SECONDS : FADE_SECONDS;
+      let seconds = onlyLight ? LIGHT_SECONDS : FADE_SECONDS;
+      const from = colours.slice(start, start + size * 3);
+
+      // A seat someone took while the Fan was looking starts from a flash.
+      if (isOpen && shown !== "mosaic") {
+        for (let i = 0; i < size; i++) {
+          if (open.states[i] !== "H" || shown[i] === "H" || own.includes(i)) continue;
+          flash.toArray(from, i * 3);
+          seconds = PULSE_SECONDS;
+        }
+      }
+
       fades.current = fades.current.filter((fade) => fade.start !== start);
       fades.current.push({
         start,
-        from: colours.slice(start, start + size * 3),
+        from,
         to,
         elapsed: reducedMotion ? seconds : 0,
         seconds,

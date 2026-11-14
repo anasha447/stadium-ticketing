@@ -76,6 +76,15 @@ export interface SeatStates {
   blocks: Record<string, string>;
 }
 
+/**
+ * A change pushed on the Match stream: these Seats are now in this state.
+ * Held by someone, sold, or available again after a Hold was let go.
+ */
+export interface SeatDelta {
+  state: SeatState;
+  seatIds: string[];
+}
+
 export interface QuoteLine {
   seatId: string;
   tier: Tier;
