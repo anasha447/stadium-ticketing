@@ -13,7 +13,9 @@ export type ViewAction =
   | { type: "openBlock"; blockId: string }
   | { type: "sit"; blockId: string; row: number; seat: number }
   /** One step out: seat to Block, Block to stadium. */
-  | { type: "back" };
+  | { type: "back" }
+  /** All the way out, from anywhere. */
+  | { type: "stadium" };
 
 export const STADIUM: View = { kind: "stadium" };
 
@@ -25,6 +27,8 @@ export function viewReducer(view: View, action: ViewAction): View {
       return { kind: "seat", blockId: action.blockId, row: action.row, seat: action.seat };
     case "back":
       if (view.kind === "seat") return { kind: "block", blockId: view.blockId };
+      return STADIUM;
+    case "stadium":
       return STADIUM;
   }
 }

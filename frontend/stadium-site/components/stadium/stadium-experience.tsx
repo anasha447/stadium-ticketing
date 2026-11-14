@@ -1,12 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import type { Block, Currency } from "@/lib/domain/types";
-import { formatCount, formatMoney, TIER_NAME, TIER_SWATCH } from "@/lib/format";
+import type { Block, Currency, SeatCounts, Tier } from "@/lib/domain/types";
+import { formatCount, formatMoney, TIER_NAME, TIER_ORDER, TIER_SWATCH } from "@/lib/format";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-reduced-motion";
-import { seatAtPoint, seatOnRay } from "@/lib/stadium/layout";
+import { seatAtPoint, seatOnRay, type SeatRefInBlock } from "@/lib/stadium/layout";
 import {
   availableCount,
   isAvailable,
@@ -15,11 +15,15 @@ import {
   STADIUM,
   viewReducer,
 } from "@/lib/stadium/view";
-import type { StandClick } from "./bowl";
+import { seatView } from "@/lib/stadium/view-score";
+import { seatOffset } from "@/lib/domain/seat-id";
+import type { StandHit } from "./bowl";
+import type { Heading } from "./camera-rig";
+import { MiniMap } from "./mini-map";
 
 // The stadium a Fan moves through: the whole bowl, then a Block, then a seat.
 // This component decides where the Fan is and loads what that needs; the
-// canvas draws it and the panel says it in words.
+// canvas draws it, and the panels around it say it in words.
 
 // Three.js needs a browser, so the canvas is loaded only on the client, and
 // only on this page: no other page pays for the 3D code.
@@ -39,7 +43,19 @@ export function StadiumLoading() {
 const QUIET_BUTTON =
   "h-11 rounded-control border border-night-700 px-4 text-sm font-semibold transition-colors duration-fast hover:bg-night-800 disabled:text-flood-500 disabled:hover:bg-transparent";
 
+const STATE_WORD: Record<string, string> = { A: "Available", H: "Held", S: "Sold" };
+
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/** What the pointer is over: a whole Block, or one seat of the open Block. */
+type Hover =
+  | { kind: "block"; blockId: string }
+  | { kind: "seat"; blockId: string; row: number; seat: number };
+
+const sameHover = (a: Hover | null, b: Hover | null) =>
+  a?.kind === b?.kind &&
+  a?.blockId === b?.blockId &&
+  (a?.kind !== "seat" || b?.kind !== "seat" || (a.row === b.row && a.seat === b.seat));
 
 export function StadiumExperience({
   matchId,
@@ -57,10 +73,31 @@ export function StadiumExperience({
   /** Seat States of the Blocks opened so far, by Block id. */
   const [states, setStates] = useState<Record<string, string>>({});
   const [failed, setFailed] = useState<string | null>(null);
+  /** Seats left in every Block, for the hover card. */
+  const [counts, setCounts] = useState<Record<string, SeatCounts>>({});
+  const [hover, setHover] = useState<Hover | null>(null);
+  const [shownTier, setShownTier] = useState<Tier | null>(null);
+  const heading = useRef<Heading>({ x: 0, z: 0 });
+  const card = useRef<HTMLDivElement>(null);
 
   const blockId = view.kind === "stadium" ? null : view.blockId;
   const block = blockId ? blocks.find((b) => b.id === blockId) : undefined;
   const blockStates = blockId ? states[blockId] : undefined;
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getOccupancy(matchId)
+      .then((occupancy) => {
+        if (!cancelled) setCounts(occupancy.blocks);
+      })
+      .catch(() => {
+        // The hover card simply leaves out "seats left".
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
 
   // Seat States are per Fan and change by the second, so they are read here
   // in the browser when a Block is opened, never on the server.
@@ -87,24 +124,57 @@ export function StadiumExperience({
     [blockId, blockStates],
   );
 
-  const handleStandClick = useCallback(
-    (click: StandClick) => {
-      const guess = seatAtPoint(blocks, click.point[0], click.point[2]);
-      if (!guess) return;
-      const { block: clicked, row, seat } = seatOnRay(guess, click.origin, click.direction);
+  /** The seat a pointer on the stands is aimed at. */
+  const aimedAt = useCallback(
+    (hit: StandHit): SeatRefInBlock | null => {
+      const guess = seatAtPoint(blocks, hit.point[0], hit.point[2]);
+      return guess && seatOnRay(guess, hit.origin, hit.direction);
+    },
+    [blocks],
+  );
 
+  const handleStandClick = useCallback(
+    (hit: StandHit) => {
+      const aimed = aimedAt(hit);
+      if (!aimed) return;
+      setHover(null);
       // A click on another Block always goes to that Block.
-      if (clicked.id !== blockId) {
-        dispatch({ type: "openBlock", blockId: clicked.id });
+      if (aimed.block.id !== blockId) {
+        dispatch({ type: "openBlock", blockId: aimed.block.id });
         return;
       }
       // In the open Block, only an available seat can be sat in.
-      if (blockStates && isAvailable(clicked, blockStates, row, seat)) {
-        dispatch({ type: "sit", blockId: clicked.id, row, seat });
+      if (blockStates && isAvailable(aimed.block, blockStates, aimed.row, aimed.seat)) {
+        dispatch({ type: "sit", blockId: aimed.block.id, row: aimed.row, seat: aimed.seat });
       }
     },
-    [blocks, blockId, blockStates],
+    [aimedAt, blockId, blockStates],
   );
+
+  const viewKind = view.kind;
+  const handleStandHover = useCallback(
+    (hit: StandHit | null) => {
+      const aimed = hit && viewKind !== "seat" ? aimedAt(hit) : null;
+      const next: Hover | null = !aimed
+        ? null
+        : aimed.block.id === blockId
+          ? { kind: "seat", blockId: aimed.block.id, row: aimed.row, seat: aimed.seat }
+          : { kind: "block", blockId: aimed.block.id };
+      // The pointer moves constantly; only tell React when the target changes.
+      setHover((current) => (sameHover(current, next) ? current : next));
+      // The card follows the pointer without going through React at all.
+      if (hit && card.current) {
+        const x = Math.min(hit.clientX + 18, window.innerWidth - 240);
+        const y = Math.min(hit.clientY + 18, window.innerHeight - 150);
+        card.current.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    },
+    [aimedAt, blockId, viewKind],
+  );
+
+  const handleMapHover = useCallback((id: string | null) => {
+    setHover(id ? { kind: "block", blockId: id } : null);
+  }, []);
 
   // Where the four seat buttons would take the Fan, or null if nowhere.
   // Seat numbers run clockwise, which is to the left of a Fan facing the pitch.
@@ -147,20 +217,69 @@ export function StadiumExperience({
     return () => window.removeEventListener("keydown", onKey);
   }, [moves, sit]);
 
+  const seated = view.kind === "seat" && block ? seatView(block, view.row, view.seat) : null;
+  const litBlockId = hover?.kind === "block" ? hover.blockId : null;
+  const tierPrice = useMemo(() => {
+    const price = {} as Record<Tier, string>;
+    for (const b of blocks) price[b.tier] = b.basePrice;
+    return price;
+  }, [blocks]);
+
   return (
     <>
-      <StadiumCanvas
-        blocks={blocks}
-        view={view}
-        open={open}
-        reducedMotion={reducedMotion}
-        onStandClick={handleStandClick}
-      />
+      <div className={`absolute inset-0 ${hover ? "cursor-pointer" : "cursor-grab"}`}>
+        <StadiumCanvas
+          blocks={blocks}
+          view={view}
+          open={open}
+          litBlockId={litBlockId}
+          shownTier={shownTier}
+          reducedMotion={reducedMotion}
+          heading={heading}
+          onStandClick={handleStandClick}
+          onStandHover={handleStandHover}
+        />
+      </div>
 
+      {/* Where the Fan is, and what they can do there. A sheet at the bottom on a phone. */}
       <section
         aria-live="polite"
         className="glass absolute inset-x-4 bottom-4 flex flex-col gap-3 px-4 py-4 sm:inset-x-auto sm:bottom-auto sm:left-8 sm:top-4 sm:w-80"
       >
+        <nav aria-label="Where you are">
+          <ol className="flex flex-wrap items-center gap-x-2 text-sm text-flood-300">
+            <li>
+              {view.kind === "stadium" ? (
+                <span aria-current="page" className="text-flood-50">Stadium</span>
+              ) : (
+                <button type="button" className="underline-offset-4 hover:text-flood-50 hover:underline" onClick={() => dispatch({ type: "stadium" })}>
+                  Stadium
+                </button>
+              )}
+            </li>
+            {block && (
+              <li className="flex items-center gap-x-2">
+                <span aria-hidden>/</span>
+                {view.kind === "block" ? (
+                  <span aria-current="page" className="text-flood-50">Block {block.id}</span>
+                ) : (
+                  <button type="button" className="underline-offset-4 hover:text-flood-50 hover:underline" onClick={() => dispatch({ type: "back" })}>
+                    Block {block.id}
+                  </button>
+                )}
+              </li>
+            )}
+            {view.kind === "seat" && (
+              <li className="flex items-center gap-x-2">
+                <span aria-hidden>/</span>
+                <span aria-current="page" className="text-flood-50">
+                  Row {pad(view.row)}, seat {pad(view.seat)}
+                </span>
+              </li>
+            )}
+          </ol>
+        </nav>
+
         {view.kind === "stadium" && (
           <>
             <h1 className="display text-2xl">{title}</h1>
@@ -205,9 +324,9 @@ export function StadiumExperience({
               </>
             )}
 
-            {view.kind === "seat" && (
+            {view.kind === "seat" && seated && (
               <>
-                <dl className="grid grid-cols-3 gap-3 text-sm">
+                <dl className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
                   <div>
                     <dt className="text-flood-300">Row</dt>
                     <dd className="data text-lg">{pad(view.row)}</dd>
@@ -219,6 +338,20 @@ export function StadiumExperience({
                   <div>
                     <dt className="text-flood-300">Price</dt>
                     <dd className="data text-lg">{formatMoney(block.basePrice, currency)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-flood-300">View</dt>
+                    <dd className="data text-lg">
+                      {seated.score}
+                      <span className="text-sm text-flood-300"> of 100</span>
+                    </dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-flood-300">To the pitch</dt>
+                    <dd className="data text-lg">
+                      {seated.toPitch}
+                      <span className="text-sm text-flood-300"> m</span>
+                    </dd>
                   </div>
                 </dl>
                 <div className="grid grid-cols-2 gap-2">
@@ -235,7 +368,7 @@ export function StadiumExperience({
                     Row behind
                   </button>
                 </div>
-                <p className="text-xs text-flood-500">
+                <p className="hidden text-xs text-flood-500 sm:block">
                   Drag to look around, scroll to zoom. The arrow keys move you
                   to the next available seat.
                 </p>
@@ -248,6 +381,113 @@ export function StadiumExperience({
           </>
         )}
       </section>
+
+      {/* The four Tiers. Pressing one dims every Block of the other Tiers. */}
+      <section
+        aria-label="Tiers and prices"
+        className="glass absolute left-4 top-4 px-2 py-2 sm:bottom-4 sm:left-8 sm:top-auto sm:w-80 sm:px-3 sm:py-3"
+      >
+        <ul className="grid grid-cols-2 gap-1 sm:grid-cols-1">
+          {TIER_ORDER.map((tier) => (
+            <li key={tier}>
+              <button
+                type="button"
+                aria-pressed={shownTier === tier}
+                onClick={() => setShownTier((current) => (current === tier ? null : tier))}
+                className={`flex h-9 w-full items-center gap-2 rounded-control px-2 text-left text-sm transition-colors duration-fast hover:bg-night-800 ${
+                  shownTier === tier ? "bg-night-800 text-flood-50" : "text-flood-300"
+                }`}
+              >
+                <span className={`size-3 shrink-0 ${TIER_SWATCH[tier]}`} aria-hidden />
+                <span className="hidden flex-1 sm:inline">{TIER_NAME[tier]}</span>
+                <span className="data">{formatMoney(tierPrice[tier], currency)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="glass absolute right-4 top-4 h-28 w-24 p-1.5 sm:bottom-4 sm:right-8 sm:top-auto sm:h-56 sm:w-48 sm:p-3">
+        <MiniMap
+          blocks={blocks}
+          view={view}
+          litBlockId={litBlockId}
+          shownTier={shownTier}
+          heading={heading}
+          onOpenBlock={(id) => dispatch({ type: "openBlock", blockId: id })}
+          onHoverBlock={handleMapHover}
+        />
+      </section>
+
+      {/* The card beside the pointer. It is always in the page so it can be
+          moved without React; it is only shown while something is hovered. */}
+      <div
+        ref={card}
+        role="tooltip"
+        className={`glass pointer-events-none fixed left-0 top-0 z-10 w-56 px-3 py-2 text-sm transition-opacity duration-fast ${
+          hover ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <HoverCard
+          hover={hover}
+          blocks={blocks}
+          counts={counts}
+          states={states}
+          currency={currency}
+        />
+      </div>
+    </>
+  );
+}
+
+function HoverCard({
+  hover,
+  blocks,
+  counts,
+  states,
+  currency,
+}: {
+  hover: Hover | null;
+  blocks: Block[];
+  counts: Record<string, SeatCounts>;
+  states: Record<string, string>;
+  currency: Currency;
+}) {
+  const block = hover && blocks.find((b) => b.id === hover.blockId);
+  if (!hover || !block) return null;
+  const price = formatMoney(block.basePrice, currency);
+
+  if (hover.kind === "block") {
+    const left = counts[block.id]?.available;
+    return (
+      <>
+        <p className="display text-xl">Block {block.id}</p>
+        <p className="text-flood-300">
+          {TIER_NAME[block.tier]}, <span className="data text-flood-50">{price}</span>
+        </p>
+        {left !== undefined && (
+          <p className="text-flood-300">
+            <span className="data text-flood-50">{formatCount(left)}</span> seats left
+          </p>
+        )}
+      </>
+    );
+  }
+
+  const state = states[block.id]?.[seatOffset(block, hover.row, hover.seat)];
+  const { score } = seatView(block, hover.row, hover.seat);
+  return (
+    <>
+      <p className="font-semibold">
+        Row {pad(hover.row)}, seat {pad(hover.seat)}
+      </p>
+      <p className="text-flood-300">
+        {state ? `${STATE_WORD[state]}, ` : ""}
+        <span className="data text-flood-50">{price}</span>
+      </p>
+      <p className="text-flood-300">
+        View <span className="data text-flood-50">{score}</span> of 100
+      </p>
     </>
   );
 }

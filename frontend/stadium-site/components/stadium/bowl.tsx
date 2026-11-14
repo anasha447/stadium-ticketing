@@ -1,5 +1,6 @@
 "use client";
 
+import { Bvh } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useMemo } from "react";
 import { DoubleSide } from "three";
@@ -19,32 +20,48 @@ const FASCIA = 2.2;
 /** How far in from the outer wall the roof reaches, as a depth. */
 const ROOF_INNER_DEPTH = 46;
 
-/** A click on a stand: the point on the concrete, and the line of sight that hit it. */
-export interface StandClick {
+/** Where the pointer met a stand: the point on the concrete, and the line of sight that hit it. */
+export interface StandHit {
   point: [number, number, number];
   origin: [number, number, number];
   direction: [number, number, number];
+  /** Where the pointer is on the page, for placing a card beside it. */
+  clientX: number;
+  clientY: number;
 }
 
 /** A press that moved further than this, in pixels, was a drag and not a click. */
 const DRAG_PIXELS = 5;
 
+function toHit(event: ThreeEvent<MouseEvent | PointerEvent>): StandHit {
+  return {
+    point: event.point.toArray(),
+    origin: event.ray.origin.toArray(),
+    direction: event.ray.direction.toArray(),
+    clientX: event.nativeEvent.clientX,
+    clientY: event.nativeEvent.clientY,
+  };
+}
+
 export function Bowl({
   rows,
   onStandClick,
+  onStandHover,
 }: {
   rows: Record<Level, number>;
-  onStandClick: (click: StandClick) => void;
+  onStandClick: (hit: StandHit) => void;
+  /** Called as the pointer moves over the stands, and with null when it leaves them. */
+  onStandHover: (hit: StandHit | null) => void;
 }) {
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     if (event.delta > DRAG_PIXELS) return;
     // Only the nearest stand counts, not the one behind it.
     event.stopPropagation();
-    onStandClick({
-      point: event.point.toArray(),
-      origin: event.ray.origin.toArray(),
-      direction: event.ray.direction.toArray(),
-    });
+    onStandClick(toHit(event));
+  };
+  const handleMove = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    onStandHover(toHit(event));
   };
 
   const parts = useMemo(() => {
@@ -103,11 +120,22 @@ export function Bowl({
 
   return (
     <group>
-      {parts.terraces.map((geometry, i) => (
-        <mesh key={LEVELS[i]} geometry={geometry} onClick={handleClick}>
-          <meshStandardMaterial color={COLOR.sceneConcrete} roughness={0.95} flatShading side={DoubleSide} />
-        </mesh>
-      ))}
+      {/* The steps are what the pointer is tested against. Bvh sorts their
+          triangles into a tree, so finding the one under the pointer takes a
+          few dozen checks and not eighty thousand. */}
+      <Bvh firstHitOnly>
+        <group
+          onClick={handleClick}
+          onPointerMove={handleMove}
+          onPointerOut={() => onStandHover(null)}
+        >
+          {parts.terraces.map((geometry, i) => (
+            <mesh key={LEVELS[i]} geometry={geometry}>
+              <meshStandardMaterial color={COLOR.sceneConcrete} roughness={0.95} flatShading side={DoubleSide} />
+            </mesh>
+          ))}
+        </group>
+      </Bvh>
 
       {parts.hanging.map(({ fascia, underside }, i) => (
         <group key={i}>

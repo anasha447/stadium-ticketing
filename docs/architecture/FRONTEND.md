@@ -92,6 +92,8 @@ lib/stadium/mosaic.ts     the colour of each seat in stadium view: bands plus th
 lib/stadium/mark-bitmaps.ts  the crest and the Spotify symbol as bitmaps (made by scripts/make-marks.py)
 lib/stadium/view.ts       which view the Fan is in (stadium, Block, seat) and how to step between seats
 lib/stadium/camera.ts     where the camera stands in each view, and how long a flight takes
+lib/stadium/view-score.ts the view score of a seat (0 to 100) and its distance to the pitch
+lib/stadium/minimap.ts    the outline of each Block seen from above, for the mini-map
 lib/design/tokens.ts      the colours 3D code may use, checked against globals.css by a test
 components/stadium/       the React Three Fiber scene: bowl, pitch, seats, camera rig, and the
                           StadiumExperience component that owns the view and the panel
@@ -108,6 +110,15 @@ against the concrete steps (three meshes), and `layout.ts` turns the point that 
 back into a Block, Row and seat, then checks the few seats around it against the line of
 sight to pick the one actually aimed at. That is a handful of sums per click, where
 testing every seat would be 60,000.
+
+**Hovering** uses the same lookup as clicking, on every pointer move. The steps are
+indexed in a tree (drei's `Bvh`) so each move costs a few dozen checks. The card beside
+the pointer is moved by writing its position directly; React is only told when the
+Block or seat under the pointer changes.
+
+**The view score** is a guide, not a measurement: half distance to the centre spot, a
+fifth height above it, the rest how side-on the seat is. When the backend returns a real
+score, `view-score.ts` is the one file to replace.
 
 **Seat States** for a Block are read in the browser when the Block is opened
 (`GET …/seat-states?blocks=214`), and that Block's seats change from the mosaic to their
