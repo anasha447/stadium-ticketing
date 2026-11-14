@@ -96,7 +96,7 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
 - **Active track:** frontend F-track (ADR-0006) — Sprint **F2 The Stadium** (Nov 21 – Nov 27, 2026, started early) → ROADMAP "Frontend track"
-- **Active ticket:** TKT-F201 — the stadium bowl in 3D — built, PR open for review. Next: TKT-F202 (60K seats + mosaic; needs the two logo files in `.claude/skills/photos/`)
+- **Active ticket:** TKT-F203 — Stadium → Block → Seat views with camera flights and Seat State colours — in progress (F201, F202 merged)
 - **Backend, paused at:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` before resuming
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)

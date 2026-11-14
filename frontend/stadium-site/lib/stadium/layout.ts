@@ -108,6 +108,27 @@ function onArc(centre: { x: number; z: number }, radius: number, angle: number):
   return { x: centre.x + nx * radius, z: centre.z + nz * radius, nx, nz };
 }
 
+/** How wide one Block is, in metres, at a given depth. Wider towards the back. */
+export function blockWidth(position: number, depth: number): number {
+  const { sideIndex, length } = sideOf(position);
+  const from = CORNERS[sideIndex];
+  const to = CORNERS[(sideIndex + 1) % 4];
+  const halfCorner = (Math.PI / 4) * (FRONT_CORNER_RADIUS + depth);
+  return (2 * halfCorner + Math.hypot(to.x - from.x, to.z - from.z)) / length;
+}
+
+/** How far along the slope one Row is from the next, in metres. */
+export function rowPitch(level: Level): number {
+  const { tread, riser } = LEVEL_PROFILE[level];
+  return Math.hypot(tread, riser);
+}
+
+/** Where a seat is across its Block, 0 at one aisle and 1 at the other. */
+export function seatAcross(block: Block, row: number, seat: number): number {
+  const seats = block.rowSeats[row - 1];
+  return AISLE_SHARE + ((seat - 0.5) / seats) * (1 - 2 * AISLE_SHARE);
+}
+
 /** Depth and height of the middle of a Row. Rows count from 1 at the front. */
 export function rowPlace(level: Level, row: number): { depth: number; y: number } {
   const { startDepth, startHeight, tread, riser } = LEVEL_PROFILE[level];
@@ -126,10 +147,8 @@ export interface SeatPlace extends RingPoint {
  * from behind the Block... which is clockwise around the bowl.
  */
 export function seatPlace(block: Block, row: number, seat: number): SeatPlace {
-  const seats = block.rowSeats[row - 1];
-  const across = AISLE_SHARE + ((seat - 0.5) / seats) * (1 - 2 * AISLE_SHARE);
   const { depth, y } = rowPlace(block.level, row);
-  return { ...ringPoint(block.position + across, depth), y };
+  return { ...ringPoint(block.position + seatAcross(block, row, seat), depth), y };
 }
 
 /** The middle of a Block, for aiming a camera at it. */
