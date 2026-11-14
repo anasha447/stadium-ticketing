@@ -193,7 +193,7 @@ backend sprints, whose contents and dates above are unchanged. Not pointed: it d
 count toward backend velocity. Ticket IDs: `TKT-F<sprint><nn>`. Brief:
 `.claude/skills/animation.md`. Contracts: `docs/architecture/FRONTEND.md`.
 
-**Start here: TKT-F101.**
+Ticket by ticket, with status and links: [`FRONTEND-TICKETS.md`](FRONTEND-TICKETS.md).
 
 ### F1 — Foundation · Nov 14 – Nov 20, 2026
 | Ticket | Title |

@@ -3,11 +3,11 @@
 import { Canvas } from "@react-three/fiber";
 import { useMemo } from "react";
 import { COLOR } from "@/lib/design/tokens";
-import type { Block, Level } from "@/lib/domain/types";
+import type { Block, Level, Tier } from "@/lib/domain/types";
 import { STADIUM_FOV } from "@/lib/stadium/camera";
 import type { View } from "@/lib/stadium/view";
-import { Bowl, type StandClick } from "./bowl";
-import { CameraRig } from "./camera-rig";
+import { Bowl, type StandHit } from "./bowl";
+import { CameraRig, type Heading } from "./camera-rig";
 import { Pitch } from "./pitch";
 import { type OpenBlock, Seats } from "./seats";
 
@@ -18,14 +18,22 @@ export default function StadiumCanvas({
   blocks,
   view,
   open,
+  litBlockId,
+  shownTier,
   reducedMotion,
+  heading,
   onStandClick,
+  onStandHover,
 }: {
   blocks: Block[];
   view: View;
   open: OpenBlock | null;
+  litBlockId: string | null;
+  shownTier: Tier | null;
   reducedMotion: boolean;
-  onStandClick: (click: StandClick) => void;
+  heading: { current: Heading };
+  onStandClick: (hit: StandHit) => void;
+  onStandHover: (hit: StandHit | null) => void;
 }) {
   // The terraces have one step per Row, so they need the Row count per Level.
   const rows = useMemo(() => {
@@ -55,8 +63,14 @@ export default function StadiumCanvas({
       ))}
 
       <Pitch />
-      <Bowl rows={rows} onStandClick={onStandClick} />
-      <Seats blocks={blocks} open={open} reducedMotion={reducedMotion} />
+      <Bowl rows={rows} onStandClick={onStandClick} onStandHover={onStandHover} />
+      <Seats
+        blocks={blocks}
+        open={open}
+        litBlockId={litBlockId}
+        shownTier={shownTier}
+        reducedMotion={reducedMotion}
+      />
 
       {/* The ground outside the stadium. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
@@ -64,7 +78,7 @@ export default function StadiumCanvas({
         <meshStandardMaterial color={COLOR.night900} roughness={1} />
       </mesh>
 
-      <CameraRig view={view} blocks={blocks} reducedMotion={reducedMotion} />
+      <CameraRig view={view} blocks={blocks} reducedMotion={reducedMotion} heading={heading} />
     </Canvas>
   );
 }

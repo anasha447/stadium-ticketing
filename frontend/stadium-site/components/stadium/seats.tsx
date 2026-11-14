@@ -18,9 +18,10 @@ import { buildSeats, SEAT_COLOURS } from "@/lib/stadium/seats";
 // sent to the graphics card once and repeated 60,000 times, each copy with
 // its own place and colour. That is what keeps it smooth.
 //
-// Seats have two looks. Normally they show the mosaic. The Block the Fan has
-// opened shows Seat State instead: available in its Tier colour, held in
-// amber, sold in grey.
+// A Block's seats have one of two looks. Normally they show the mosaic. The
+// Block the Fan has opened shows Seat State instead: available in its Tier
+// colour, held in amber, sold in grey. On top of either look a Block can be
+// lit (the pointer is over it) or dimmed (the legend is showing another Tier).
 
 const TIER_COLOUR: Record<Tier, ColorToken> = {
   CLUB_PREMIUM: "tierPremium",
@@ -29,8 +30,15 @@ const TIER_COLOUR: Record<Tier, ColorToken> = {
   CATEGORY_3: "tier3",
 };
 
-/** How long a Block takes to change between the mosaic and Seat State. */
+/** How long a Block takes to change between the mosaic and Seat State, or to dim. */
 const FADE_SECONDS = 0.3;
+/** Lighting up under the pointer is feedback, so it is quicker. */
+const LIGHT_SECONDS = 0.12;
+
+/** How much of its colour a dimmed Block keeps. */
+const DIMMED = 0.2;
+/** How far a lit Block moves towards white. */
+const LIT = 0.3;
 
 export interface OpenBlock {
   blockId: string;
@@ -39,10 +47,12 @@ export interface OpenBlock {
 }
 
 interface Fade {
+  /** Index of the Block's first colour value. */
   start: number;
   from: Float32Array;
   to: Float32Array;
   elapsed: number;
+  seconds: number;
 }
 
 /** Moves every fade on by `delta` seconds, writes the colours, and returns the fades still running. */
@@ -51,12 +61,12 @@ function stepFades(fades: Fade[], attribute: InstancedBufferAttribute, delta: nu
   attribute.needsUpdate = true;
   for (const fade of fades) {
     fade.elapsed += delta;
-    const k = Math.min(1, fade.elapsed / FADE_SECONDS);
+    const k = Math.min(1, fade.elapsed / fade.seconds);
     for (let i = 0; i < fade.to.length; i++) {
       colours[fade.start + i] = fade.from[i] + (fade.to[i] - fade.from[i]) * k;
     }
   }
-  return fades.filter((fade) => fade.elapsed < FADE_SECONDS);
+  return fades.filter((fade) => fade.elapsed < fade.seconds);
 }
 
 /** One seat: a pan and a backrest. Its front faces +z, its feet are at y = 0. */
@@ -69,10 +79,16 @@ function seatShape() {
 export function Seats({
   blocks,
   open,
+  litBlockId,
+  shownTier,
   reducedMotion,
 }: {
   blocks: Block[];
   open: OpenBlock | null;
+  /** The Block under the pointer, if any. */
+  litBlockId: string | null;
+  /** When set, Blocks of every other Tier are dimmed. */
+  shownTier: Tier | null;
   reducedMotion: boolean;
 }) {
   const mesh = useRef<InstancedMesh>(null);
@@ -81,7 +97,8 @@ export function Seats({
   /** The mosaic colour of every seat, kept so a Block can go back to it. */
   const mosaic = useRef(new Float32Array(0));
   const fades = useRef<Fade[]>([]);
-  const shown = useRef<string | null>(null);
+  /** What each Block currently looks like, so only Blocks that change are redrawn. */
+  const looks = useRef(new Map<string, string>());
 
   useLayoutEffect(() => {
     const instanced = mesh.current;
@@ -98,52 +115,59 @@ export function Seats({
     }
     mosaic.current = colours.slice();
     instanced.instanceColor = new InstancedBufferAttribute(colours, 3);
+    looks.current.clear();
 
     // The mesh's own bounds are one seat; tell it how big the stadium is so
     // it is not hidden when that one seat leaves the view.
     instanced.computeBoundingSphere();
   }, [seats]);
 
-  // When the open Block changes, fade the old one back to the mosaic and the
-  // new one to its Seat States.
+  // Work out how every Block should look now, and fade the ones that changed.
   useEffect(() => {
     const colours = mesh.current?.instanceColor?.array as Float32Array | undefined;
     if (!colours) return;
 
-    const fadeTo = (blockId: string, target: (from: number, size: number) => Float32Array) => {
-      const block = blocks.find((b) => b.id === blockId);
-      if (!block) return;
-      const start = seats.blockStart[blockId] * 3;
-      const size = blockSeatCount(block);
-      fades.current.push({
-        start,
-        from: colours.slice(start, start + size * 3),
-        to: target(start, size),
-        elapsed: reducedMotion ? FADE_SECONDS : 0,
-      });
-    };
+    for (const block of blocks) {
+      const isOpen = open?.blockId === block.id;
+      const dimmed = !isOpen && shownTier !== null && block.tier !== shownTier;
+      const lit = !isOpen && !dimmed && litBlockId === block.id;
+      const base = `${isOpen ? open.states : "mosaic"}|${dimmed ? "dim" : ""}`;
+      const look = `${base}|${lit ? "lit" : ""}`;
+      const before = looks.current.get(block.id) ?? "mosaic||";
+      if (look === before) continue;
+      looks.current.set(block.id, look);
 
-    if (shown.current && shown.current !== open?.blockId) {
-      fadeTo(shown.current, (start, size) => mosaic.current.slice(start, start + size * 3));
-    }
-    if (open) {
-      const block = blocks.find((b) => b.id === open.blockId);
-      if (block) {
+      const start = seats.blockStart[block.id] * 3;
+      const size = blockSeatCount(block);
+      let to: Float32Array;
+      if (isOpen) {
         const available = new Color(COLOR[TIER_COLOUR[block.tier]]);
         const held = new Color(COLOR.stateHeld);
         const sold = new Color(COLOR.stateSold);
-        fadeTo(open.blockId, (_, size) => {
-          const to = new Float32Array(size * 3);
-          for (let i = 0; i < size; i++) {
-            const state = open.states[i];
-            (state === "A" ? available : state === "H" ? held : sold).toArray(to, i * 3);
-          }
-          return to;
-        });
+        to = new Float32Array(size * 3);
+        for (let i = 0; i < size; i++) {
+          const state = open.states[i];
+          (state === "A" ? available : state === "H" ? held : sold).toArray(to, i * 3);
+        }
+      } else {
+        to = mosaic.current.slice(start, start + size * 3);
+        if (dimmed) for (let i = 0; i < to.length; i++) to[i] *= DIMMED;
+        if (lit) for (let i = 0; i < to.length; i++) to[i] += (1 - to[i]) * LIT;
       }
+
+      // If only the light went on or off, change quickly: it is feedback.
+      const onlyLight = before.startsWith(`${base}|`);
+      const seconds = onlyLight ? LIGHT_SECONDS : FADE_SECONDS;
+      fades.current = fades.current.filter((fade) => fade.start !== start);
+      fades.current.push({
+        start,
+        from: colours.slice(start, start + size * 3),
+        to,
+        elapsed: reducedMotion ? seconds : 0,
+        seconds,
+      });
     }
-    shown.current = open?.blockId ?? null;
-  }, [open, blocks, seats, reducedMotion]);
+  }, [open, litBlockId, shownTier, blocks, seats, reducedMotion]);
 
   useFrame((_, delta) => {
     const attribute = mesh.current?.instanceColor;

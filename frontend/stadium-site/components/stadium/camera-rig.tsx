@@ -36,6 +36,14 @@ interface Flight {
 /** How far ahead the camera is taken to be looking when a flight starts from a seat. */
 const LOOK_AHEAD = 60;
 
+const facing = new Vector3();
+
+/** Notes which way the camera faces along the ground. */
+function writeHeading(heading: { current: Heading }, camera: PerspectiveCamera) {
+  camera.getWorldDirection(facing);
+  heading.current = { x: facing.x, z: facing.z };
+}
+
 /** What the Fan may do with the camera once it has landed. */
 function handOver(controls: Controls, kind: View["kind"]) {
   controls.enabled = true;
@@ -75,14 +83,22 @@ function letGo(controls: Controls) {
   controls.maxPolarAngle = Math.PI;
 }
 
+/** Which way the camera faces on the ground, for the mini-map. Updated every frame. */
+export interface Heading {
+  x: number;
+  z: number;
+}
+
 export function CameraRig({
   view,
   blocks,
   reducedMotion,
+  heading,
 }: {
   view: View;
   blocks: Block[];
   reducedMotion: boolean;
+  heading: { current: Heading };
 }) {
   const controls = useRef<Controls>(null);
   const get = useThree((state) => state.get);
@@ -175,6 +191,7 @@ export function CameraRig({
 
     orbit.autoRotate =
       !current && lastKind.current === "stadium" && !touched.current && !reducedMotion;
+    writeHeading(heading, camera);
 
     if (!current) return;
     current.elapsed += delta;
