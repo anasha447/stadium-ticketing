@@ -8,8 +8,7 @@ Status: ✅ merged · 🔎 built, PR open · ▶ in progress · ⏸ put aside fo
 
 **Order changed on 14 Nov 2026** (Anas): after F302 the track goes to F401, F402 and
 F403 first, then comes back for F303 and F304, and ends with F404. So the order is
-F401 → F402 → F403 → F303 → F304 → F404. Until F303 is built, "Continue to checkout"
-opens a page that only shows the Hold's time left and total.
+F401 → F402 → F403 → F303 → F304 → F404.
 
 ## Sprint F1 — Foundation
 
@@ -70,7 +69,7 @@ is looking, and a view score out of 100 with the distance to the pitch.
 |---|---|---|---|---|
 | TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ✅ | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
-| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ⏸ after F403 | | |
+| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | 🔎 | [#30](https://github.com/anasha447/stadium-ticketing/issues/30) | |
 | TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ⏸ after F303 | | |
 
 **TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
@@ -88,6 +87,13 @@ Discount where it applies, and the total. If a seat was taken meanwhile it is na
 dropped and the rest stay chosen. A Hold survives a reload, can be released, and says so
 when it runs out. "Continue to checkout" opens a page that shows the time left and the
 total; paying comes with F303.
+
+**TKT-F303 — Checkout.** The checkout asks for a mobile number, shows the demo code on
+screen, and checks it; a wrong code asks again. Then the Fan picks Apple Pay or card
+(no card fields) and presses "Pay €…". The Order is sent with an Idempotency-Key made
+once per Hold and kept with the method, so a retry or a reload can never pay twice. The
+page then follows the Order until it is paid (reference and seats) or failed (the Hold
+ran out). The Hold's time left and total stay in view the whole time, first on a phone.
 
 ## Sprint F4 — Atmosphere and polish
 
@@ -139,6 +145,9 @@ should pick it up.
 | "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F404 |
 | The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | F404 |
 | "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F404 |
+| After paying, the checkout lists the seats but there are no Tickets to show: My Tickets is still the empty page | F303 | F304 |
+| A declined payment and the retry with another method (`payment-attempts`) are in neither the mock nor the UI | F303 | when the gateway exists |
+| The Order's "paid" and "failed" states were seen; "failed" was only tested in code (Hold running out mid-payment) | F303 | F404 |
 | The amber pulse and the "Another Fan has just taken this seat" line in seat view were not seen on screen at full speed; the taken-seat notice was | F402 | F404 |
 | The cost of rebuilding the fans on each stream update was not measured (the preview pane draws too few frames) | F402 | F404 |
 | New fans pop into a seat sold while the Block is open; they do not rise | F402 | F404, if wanted |
