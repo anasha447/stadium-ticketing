@@ -7,12 +7,18 @@ import type {
   Order,
   OtpChallenge,
   Quote,
+  SeatDelta,
   SeatMap,
   SeatStates,
   Session,
   Ticket,
   WaitingRoomStatus,
 } from "@/lib/domain/types";
+
+export interface SeatWatcher {
+  onOpen?: () => void;
+  onDelta: (delta: SeatDelta) => void;
+}
 
 /**
  * Everything the screens can ask the backend. One method per endpoint of
@@ -39,6 +45,14 @@ export interface StadiumApi {
   getOccupancy(matchId: number): Promise<Occupancy>;
   /** All Blocks, or only the ones asked for. */
   getSeatStates(matchId: number, blockIds?: string[]): Promise<SeatStates>;
+  /**
+   * Opens the Match stream and calls back with every Seat State change from
+   * then on. Changes from before it opened are not sent, so `onOpen` is the
+   * moment to read the Seat States: it is called when the stream connects,
+   * and again each time it comes back after dropping. Returns a function
+   * that closes the stream.
+   */
+  watchSeats(matchId: number, watcher: SeatWatcher): () => void;
   createHold(matchId: number, request: CreateHoldRequest): Promise<Hold>;
   getHold(matchId: number, holdId: string): Promise<Hold>;
   releaseHold(matchId: number, holdId: string): Promise<void>;

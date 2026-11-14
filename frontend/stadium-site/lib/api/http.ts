@@ -64,6 +64,15 @@ export const httpApi: StadiumApi = {
     const query = blockIds?.length ? `?blocks=${blockIds.join(",")}` : "";
     return request("GET", `/matches/${matchId}/seat-states${query}`);
   },
+  watchSeats: (matchId, { onOpen, onDelta }) => {
+    // One stream per Match carries seat changes, prices and the score as
+    // named events. Only the seat changes are read here. The browser
+    // reconnects by itself, and says so with another "open".
+    const events = new EventSource(`${baseUrl()}/stream/matches/${matchId}`);
+    events.onopen = () => onOpen?.();
+    events.addEventListener("seat-delta", (event) => onDelta(JSON.parse(event.data)));
+    return () => events.close();
+  },
   createHold: (matchId, body) =>
     request("POST", `/matches/${matchId}/holds`, { body }),
   getHold: (matchId, holdId) =>

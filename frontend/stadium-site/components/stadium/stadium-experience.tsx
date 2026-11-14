@@ -2,7 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { api, isProblem, PROBLEM } from "@/lib/api";
 import {
   addSeat,
@@ -14,11 +22,12 @@ import {
   seatIdOf,
   seatsTogether,
 } from "@/lib/booking/selection";
-import type { Block, Currency, Hold, SeatCounts, Tier } from "@/lib/domain/types";
+import type { Block, Currency, Hold, SeatCounts, SeatDelta, Tier } from "@/lib/domain/types";
 import { formatCount, formatMoney, TIER_NAME, TIER_ORDER, TIER_SWATCH } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-reduced-motion";
 import { seatAtPoint, seatOnRay, type SeatRefInBlock } from "@/lib/stadium/layout";
+import { applyDeltas, countSeats, takenSeats } from "@/lib/stadium/live-seats";
 import {
   availableCount,
   isAvailable,
@@ -93,6 +102,17 @@ function seatWords(seatId: string): string {
 
 const STATE_WORD: Record<string, string> = { A: "Available", H: "Held", S: "Sold" };
 
+/** Says which chosen seats someone else got to first. */
+function takenNotice(taken: string[], stillChosen: number): string {
+  const seats = `Taken while you were choosing: ${taken.map(seatWords).join(", ")}.`;
+  return stillChosen > 0 ? `${seats} Your other seats are still chosen.` : seats;
+}
+
+/** Seat changes can come many times a second; the page takes them in this often. */
+const TAKE_IN_EVERY_MS = 400;
+/** How long a seat change is remembered, to patch a snapshot that was on its way. */
+const REMEMBER_MS = 30_000;
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** What the pointer is over: a whole Block, or one seat of the open Block. */
@@ -118,15 +138,13 @@ export function StadiumExperience({
 }) {
   const [view, dispatch] = useReducer(viewReducer, STADIUM);
   const reducedMotion = usePrefersReducedMotion();
-  /** Seat States of the Blocks opened so far, by Block id. */
+  /** Seat States by Block id: read when the Match stream opens, then kept up to date by it. */
   const [states, setStates] = useState<Record<string, string>>({});
-  /** Seat States of the whole stadium, read once, so every sold seat can have its fan. */
-  const [crowd, setCrowd] = useState<Record<string, string>>({});
+  /** The seat changes of the last half minute, newest last. */
+  const recent = useRef<{ at: number; delta: SeatDelta }[]>([]);
   /** With reduced motion the match stands still until the Fan starts it. */
   const [matchStarted, setMatchStarted] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-  /** Seats left in every Block, for the hover card. */
-  const [counts, setCounts] = useState<Record<string, SeatCounts>>({});
   const [hover, setHover] = useState<Hover | null>(null);
   const [shownTier, setShownTier] = useState<Tier | null>(null);
   const heading = useRef<Heading>({ x: 0, z: 0 });
@@ -145,35 +163,26 @@ export function StadiumExperience({
   const block = blockId ? blocks.find((b) => b.id === blockId) : undefined;
   const blockStates = blockId ? states[blockId] : undefined;
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getOccupancy(matchId)
-      .then((occupancy) => {
-        if (!cancelled) setCounts(occupancy.blocks);
-      })
-      .catch(() => {
-        // The hover card simply leaves out "seats left".
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [matchId]);
+  const blockById = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getSeatStates(matchId)
-      .then((result) => {
-        if (!cancelled) setCrowd(result.blocks);
-      })
-      .catch(() => {
-        // The stands simply stay empty.
+  /** Seats left in every Block, for the hover card. */
+  const counts = useMemo(() => countSeats(states), [states]);
+
+  /**
+   * Reads Seat States, of every Block or of some, and puts them in place.
+   * A change that arrived while the answer was on its way may be missing
+   * from it, so those are applied again on top.
+   */
+  const readStates = useCallback(
+    (blockIds?: string[]) => {
+      const asked = Date.now();
+      return api.getSeatStates(matchId, blockIds).then((result) => {
+        const since = recent.current.filter((seen) => seen.at >= asked).map((seen) => seen.delta);
+        setStates((known) => applyDeltas({ ...known, ...result.blocks }, since, blockById));
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [matchId]);
+    },
+    [matchId, blockById],
+  );
 
   // A Hold outlives a reload: read it back if this tab made one.
   useEffect(() => {
@@ -193,35 +202,62 @@ export function StadiumExperience({
     };
   }, [matchId]);
 
-  /** Reads Seat States and seats left again, after a Hold changed them. */
+  /** Reads the Seat States of these Blocks again, after a Hold changed them. */
   const refresh = useCallback(
     (blockIds: string[]) => {
       const ids = [...new Set(blockIds)];
-      if (ids.length > 0) {
-        api
-          .getSeatStates(matchId, ids)
-          .then((result) => setStates((known) => ({ ...known, ...result.blocks })))
-          .catch(() => {});
-      }
-      api
-        .getOccupancy(matchId)
-        .then((occupancy) => setCounts(occupancy.blocks))
-        .catch(() => {});
+      if (ids.length > 0) readStates(ids).catch(() => {});
     },
-    [matchId],
+    [readStates],
   );
 
-  // Seat States are per Fan and change by the second, so they are read here
-  // in the browser when a Block is opened, never on the server.
+  const takeIn = useEffectEvent((batch: SeatDelta[]) => {
+    setStates((known) => applyDeltas(known, batch, blockById));
+    // A seat this Fan has chosen but does not hold yet can go to someone
+    // else. While a Hold is being made, its answer says so instead.
+    if (hold || busy) return;
+    const taken = takenSeats(batch, chosen.map(seatIdOf));
+    if (taken.length === 0) return;
+    setChosen((list) => removeSeatIds(list, taken));
+    setNotice(takenNotice(taken, chosen.length - taken.length));
+  });
+
+  // The Match stream. Opening it (and every time it comes back) is the cue
+  // to read the whole stadium's Seat States; after that it sends changes.
+  useEffect(() => {
+    let waiting: SeatDelta[] = [];
+    const stop = api.watchSeats(matchId, {
+      onOpen: () => {
+        // If this fails the stands stay empty, and a Block is read when it is opened.
+        readStates().catch(() => {});
+      },
+      onDelta: (delta) => {
+        recent.current.push({ at: Date.now(), delta });
+        waiting.push(delta);
+      },
+    });
+    const timer = setInterval(() => {
+      const oldest = Date.now() - REMEMBER_MS;
+      recent.current = recent.current.filter((seen) => seen.at >= oldest);
+      if (waiting.length === 0) return;
+      const batch = waiting;
+      waiting = [];
+      takeIn(batch);
+    }, TAKE_IN_EVERY_MS);
+    return () => {
+      stop();
+      clearInterval(timer);
+    };
+  }, [matchId, readStates]);
+
+  // The stream's first read covers every Block. A Block opened before that
+  // has arrived, or after it failed, is read by itself.
   useEffect(() => {
     if (!blockId || blockStates !== undefined) return;
     let cancelled = false;
-    api
-      .getSeatStates(matchId, [blockId])
-      .then((result) => {
-        if (cancelled) return;
-        setStates((known) => ({ ...known, ...result.blocks }));
-        setFailed(null);
+    readStates([blockId])
+      .then(() => {
+        if (!cancelled) setFailed(null);
       })
       .catch(() => {
         if (!cancelled) setFailed(blockId);
@@ -229,15 +265,12 @@ export function StadiumExperience({
     return () => {
       cancelled = true;
     };
-  }, [matchId, blockId, blockStates]);
+  }, [blockId, blockStates, readStates]);
 
   const open = useMemo(
     () => (blockId && blockStates ? { blockId, states: blockStates } : null),
     [blockId, blockStates],
   );
-
-  // The Blocks the Fan has opened are fresher than the first read, so they win.
-  const sold = useMemo(() => ({ ...crowd, ...states }), [crowd, states]);
 
   /** The Fan's own seats: the ones in their Hold, or the ones chosen so far. */
   const mine = useMemo(() => (hold ? seatsOf(hold) : chosen), [hold, chosen]);
@@ -375,10 +408,7 @@ export function StadiumExperience({
           // Name the seats that went, drop them, keep the rest chosen.
           const taken = error.conflictingSeatIds;
           setChosen((list) => removeSeatIds(list, taken));
-          setNotice(
-            `Taken while you were choosing: ${taken.map(seatWords).join(", ")}. ` +
-              "Your other seats are still chosen.",
-          );
+          setNotice(takenNotice(taken, chosen.length - taken.length));
           refresh(blockIds);
         } else if (isProblem(error, PROBLEM.purchaseLimit)) {
           setNotice(error.detail ?? "You can have four seats for one Match.");
@@ -415,6 +445,13 @@ export function StadiumExperience({
   };
 
   const seated = view.kind === "seat" && block ? seatView(block, view.row, view.seat) : null;
+  /** True when someone else took the seat the Fan is sitting in to look. */
+  const currentTaken =
+    current !== null &&
+    block !== undefined &&
+    blockStates !== undefined &&
+    !isChosen(mine, current) &&
+    blockStates[seatOffset(block, current.row, current.seat)] !== "A";
   const litBlockId = hover?.kind === "block" ? hover.blockId : null;
   const tierPrice = useMemo(() => {
     const price = {} as Record<Tier, string>;
@@ -429,7 +466,7 @@ export function StadiumExperience({
           blocks={blocks}
           view={view}
           open={open}
-          sold={sold}
+          sold={states}
           litBlockId={litBlockId}
           shownTier={shownTier}
           mine={mine}
@@ -596,7 +633,13 @@ export function StadiumExperience({
                     Remove from your seats
                   </button>
                 )}
-                {current && !hold && !isChosen(chosen, current) && (
+                {currentTaken && !hold && (
+                  <p className="text-sm text-flood-300">
+                    Another Fan has just taken this seat. The buttons below go
+                    to the nearest available ones.
+                  </p>
+                )}
+                {current && !hold && !currentTaken && !isChosen(chosen, current) && (
                   <>
                     <button
                       type="button"

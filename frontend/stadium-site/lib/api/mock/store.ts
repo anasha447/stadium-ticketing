@@ -1,4 +1,5 @@
 import type { Hold, Order, PaymentMethod, Ticket } from "@/lib/domain/types";
+import type { OtherFans } from "./other-fans";
 
 // What the mock remembers about this Fan. In the browser it is kept in
 // localStorage so a reload keeps your seats; in tests it is kept in memory.
@@ -19,6 +20,8 @@ export interface MockState {
   tickets: Ticket[];
   /** The Fan's place in each Match's Waiting Room, by Match id. */
   waitingRoom?: Record<number, { drawAt: number; drawnPosition: number }>;
+  /** What the other Fans have held and bought in each Match, by Match id. */
+  otherFans?: Record<number, OtherFans>;
   /** Idempotency-Key → the request it was used for and the Order it made. */
   idempotency: Record<string, { fingerprint: string; orderId: string }>;
 }

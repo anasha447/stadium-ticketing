@@ -12,6 +12,7 @@ import { parseSeatId, seatOffset } from "@/lib/domain/seat-id";
 import { PROBLEM, problem } from "../problem";
 import type { StadiumApi } from "../stadium-api";
 import { findMatch, MATCHES, toMatch, type MockMatch } from "./matches";
+import { noOtherFans, stepOtherFans } from "./other-fans";
 import { priceSeats } from "./pricing";
 import { findBlock, generateSeatMap } from "./seat-map";
 import { soldSeats } from "./sold-seats";
@@ -24,6 +25,7 @@ import type { MockState, MockStore, StoredOrder } from "./store";
 //   - a Fan can never have more than four seats for a Match
 //   - the same Idempotency-Key never creates a second Order
 //   - a Hold needs an admission from the Waiting Room
+//   - other Fans hold and buy seats too, and their seats cannot be taken
 
 export const HOLD_TTL_MS = 480_000; // 8 minutes, as in DESIGN §3
 export const MAX_SEATS = 4;
@@ -39,6 +41,8 @@ export const DRAW_DELAY_MS = 6_000;
 /** How long an admission lasts. */
 export const ADMISSION_MS = 30 * 60_000;
 const OTP_TTL_MS = 300_000;
+/** How often the other Fans act while someone is watching the Match stream. */
+export const OTHER_FANS_EVERY_MS = 1_000;
 
 export interface MockApiOptions {
   store: MockStore;
@@ -167,6 +171,17 @@ export function createMockApi({
     return seats;
   }
 
+  /**
+   * Seat States of every Block as anyone would see them: sold before this
+   * Fan arrived, plus what the other Fans have held and bought since.
+   */
+  function publicStates(state: MockState, match: MockMatch): Record<string, string> {
+    return {
+      ...soldSeats(match.id, match.soldShare).blocks,
+      ...state.otherFans?.[match.id]?.blocks,
+    };
+  }
+
   function seatState(state: MockState, match: MockMatch, seatId: string): SeatState | null {
     const ref = parseSeatId(seatId);
     const block = ref && findBlock(ref.blockId);
@@ -175,7 +190,7 @@ export function createMockApi({
     if (offset < 0) return null;
     const mine = mySeats(state, match.id).get(seatId);
     if (mine) return mine;
-    return soldSeats(match.id, match.soldShare).blocks[block.id][offset] as SeatState;
+    return publicStates(state, match)[block.id][offset] as SeatState;
   }
 
   /** The public shape, without what only the mock needs. */
@@ -243,10 +258,19 @@ export function createMockApi({
     getOccupancy: (matchId) =>
       run((state) => {
         const match = requireMatch(matchId);
-        const base = soldSeats(matchId, match.soldShare).counts;
         const blocks: Record<string, SeatCounts> = {};
-        for (const [blockId, counts] of Object.entries(base)) {
+        for (const [blockId, counts] of Object.entries(soldSeats(matchId, match.soldShare).counts)) {
           blocks[blockId] = { ...counts };
+        }
+        // Blocks the other Fans have changed are counted again.
+        for (const [blockId, states] of Object.entries(state.otherFans?.[matchId]?.blocks ?? {})) {
+          const counts = { available: 0, held: 0, sold: 0 };
+          for (const seat of states) {
+            if (seat === "A") counts.available++;
+            else if (seat === "H") counts.held++;
+            else counts.sold++;
+          }
+          blocks[blockId] = counts;
         }
         // This Fan's seats were available before, so move them across.
         for (const [seatId, state_] of mySeats(state, matchId)) {
@@ -267,7 +291,7 @@ export function createMockApi({
     getSeatStates: (matchId, blockIds) =>
       run((state) => {
         const match = requireMatch(matchId);
-        const base = soldSeats(matchId, match.soldShare).blocks;
+        const base = publicStates(state, match);
         const wanted = blockIds ?? Object.keys(base);
         const blocks: Record<string, string> = {};
         for (const blockId of wanted) {
@@ -286,6 +310,36 @@ export function createMockApi({
         }
         return { matchId, blocks };
       }),
+
+    watchSeats: (matchId, { onOpen, onDelta }) => {
+      // The gateway pushes each change as it happens; the mock lets the
+      // other Fans act once a second and reports what they did.
+      const match = findMatch(matchId);
+      const openedAt = now();
+      const act = () => {
+        if (match?.status !== "BOOKING_OPEN") return;
+        const state = load();
+        settle(state);
+        state.otherFans ??= {};
+        const others = (state.otherFans[matchId] ??= noOtherFans(openedAt));
+        const deltas = stepOtherFans(others, {
+          blocks: generateSeatMap(matchId).blocks,
+          base: soldSeats(matchId, match.soldShare).blocks,
+          mine: new Set(mySeats(state, matchId).keys()),
+          now: now(),
+          random,
+        });
+        store.save(state);
+        deltas.forEach(onDelta);
+      };
+      // Like a real stream, it opens a moment after it is asked for.
+      const opened = setTimeout(() => onOpen?.(), 0);
+      const timer = setInterval(act, OTHER_FANS_EVERY_MS);
+      return () => {
+        clearTimeout(opened);
+        clearInterval(timer);
+      };
+    },
 
     createHold: (matchId, request) =>
       run((state) => {
