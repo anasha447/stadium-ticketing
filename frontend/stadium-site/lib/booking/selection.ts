@@ -21,11 +21,22 @@ export const sameSeat = (a: ChosenSeat, b: ChosenSeat) =>
 export const isChosen = (chosen: ChosenSeat[], seat: ChosenSeat) =>
   chosen.some((other) => sameSeat(other, seat));
 
-export const isFull = (chosen: ChosenSeat[]) => chosen.length >= MAX_SEATS;
+/**
+ * How many more seats a Fan may choose for a Match: four, less the seats
+ * they already have Tickets for, less what is chosen. Never below zero.
+ */
+export const seatsLeftToChoose = (chosen: ChosenSeat[], owned = 0) =>
+  Math.max(0, MAX_SEATS - owned - chosen.length);
 
-/** Adds a seat. Choosing a seat twice, or a fifth seat, changes nothing. */
-export function addSeat(chosen: ChosenSeat[], seat: ChosenSeat): ChosenSeat[] {
-  if (isChosen(chosen, seat) || isFull(chosen)) return chosen;
+/** True when the Fan may not choose another seat for this Match. */
+export const isFull = (chosen: ChosenSeat[], owned = 0) => seatsLeftToChoose(chosen, owned) === 0;
+
+/**
+ * Adds a seat. Choosing a seat twice, or one more than the limit allows
+ * (counting seats already bought), changes nothing.
+ */
+export function addSeat(chosen: ChosenSeat[], seat: ChosenSeat, owned = 0): ChosenSeat[] {
+  if (isChosen(chosen, seat) || isFull(chosen, owned)) return chosen;
   return [...chosen, seat];
 }
 

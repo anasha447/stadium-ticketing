@@ -9,6 +9,7 @@ import {
   removeSeat,
   removeSeatIds,
   seatIdOf,
+  seatsLeftToChoose,
   seatsTogether,
 } from "./selection";
 
@@ -34,6 +35,16 @@ describe("Your seats", () => {
     expect(chosen).toHaveLength(MAX_SEATS);
     expect(isFull(chosen)).toBe(true);
     expect(addSeat(chosen, seat(5))).toBe(chosen);
+  });
+
+  it("counts the seats the Fan already has Tickets for", () => {
+    expect(seatsLeftToChoose([], 3)).toBe(1);
+    expect(isFull([seat(1)], 3)).toBe(true);
+    expect(addSeat([seat(1)], seat(2), 3)).toHaveLength(1);
+    expect(addSeat([], seat(2), 3)).toHaveLength(1);
+    expect(isFull([], MAX_SEATS)).toBe(true);
+    // More Tickets than the limit (bought before a rule change) is still just full.
+    expect(seatsLeftToChoose([], 6)).toBe(0);
   });
 
   it("removes one seat, or the seats the backend says were taken", () => {
