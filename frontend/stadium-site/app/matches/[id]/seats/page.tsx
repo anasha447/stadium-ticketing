@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { StadiumLoading, StadiumView } from "@/components/stadium/stadium-view";
+import { StadiumExperience, StadiumLoading } from "@/components/stadium/stadium-experience";
 import { getMatch, getMatches, getSeatMap } from "@/lib/queries";
 
 type Props = PageProps<"/matches/[id]/seats">;
@@ -36,16 +36,11 @@ async function Stadium({ params }: { params: Props["params"] }) {
   const seatMap = await getSeatMap(matchId);
 
   return (
-    <>
-      <StadiumView blocks={seatMap.blocks} />
-      <div className="glass pointer-events-none absolute left-4 top-4 max-w-[min(22rem,calc(100%-2rem))] px-4 py-3 sm:left-8">
-        <p className="display text-2xl">
-          {match.home.shortName} v {match.away.shortName}
-        </p>
-        <p className="text-sm text-flood-300">
-          Drag to spin the stadium. Scroll or pinch to zoom.
-        </p>
-      </div>
-    </>
+    <StadiumExperience
+      matchId={matchId}
+      title={`${match.home.shortName} v ${match.away.shortName}`}
+      blocks={seatMap.blocks}
+      currency={seatMap.currency}
+    />
   );
 }

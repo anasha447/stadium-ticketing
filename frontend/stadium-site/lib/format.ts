@@ -64,3 +64,11 @@ export const TIER_ORDER: Tier[] = [
   "CATEGORY_2",
   "CATEGORY_3",
 ];
+
+/** The background class of each Tier's colour, as on the seat map. */
+export const TIER_SWATCH: Record<Tier, string> = {
+  CLUB_PREMIUM: "bg-tier-premium",
+  CATEGORY_1: "bg-tier-1",
+  CATEGORY_2: "bg-tier-2",
+  CATEGORY_3: "bg-tier-3",
+};

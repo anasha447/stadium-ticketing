@@ -1,5 +1,6 @@
 "use client";
 
+import type { ThreeEvent } from "@react-three/fiber";
 import { useMemo } from "react";
 import { DoubleSide } from "three";
 import { COLOR } from "@/lib/design/tokens";
@@ -18,7 +19,34 @@ const FASCIA = 2.2;
 /** How far in from the outer wall the roof reaches, as a depth. */
 const ROOF_INNER_DEPTH = 46;
 
-export function Bowl({ rows }: { rows: Record<Level, number> }) {
+/** A click on a stand: the point on the concrete, and the line of sight that hit it. */
+export interface StandClick {
+  point: [number, number, number];
+  origin: [number, number, number];
+  direction: [number, number, number];
+}
+
+/** A press that moved further than this, in pixels, was a drag and not a click. */
+const DRAG_PIXELS = 5;
+
+export function Bowl({
+  rows,
+  onStandClick,
+}: {
+  rows: Record<Level, number>;
+  onStandClick: (click: StandClick) => void;
+}) {
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (event.delta > DRAG_PIXELS) return;
+    // Only the nearest stand counts, not the one behind it.
+    event.stopPropagation();
+    onStandClick({
+      point: event.point.toArray(),
+      origin: event.ray.origin.toArray(),
+      direction: event.ray.direction.toArray(),
+    });
+  };
+
   const parts = useMemo(() => {
     const terraces = LEVELS.map((level) =>
       // The lower Level stands on the ground; the others hang, so their front
@@ -76,7 +104,7 @@ export function Bowl({ rows }: { rows: Record<Level, number> }) {
   return (
     <group>
       {parts.terraces.map((geometry, i) => (
-        <mesh key={LEVELS[i]} geometry={geometry}>
+        <mesh key={LEVELS[i]} geometry={geometry} onClick={handleClick}>
           <meshStandardMaterial color={COLOR.sceneConcrete} roughness={0.95} flatShading side={DoubleSide} />
         </mesh>
       ))}
