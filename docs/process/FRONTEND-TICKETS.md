@@ -94,8 +94,8 @@ total; paying comes with F303.
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
 | TKT-F401 | Night sky, floodlights, live match, fans on sold seats | ✅ | [#24](https://github.com/anasha447/stadium-ticketing/issues/24) | [#25](https://github.com/anasha447/stadium-ticketing/pull/25) |
-| TKT-F402 | Live Seat State updates over SSE (mock stream) | 🔎 | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | [#27](https://github.com/anasha447/stadium-ticketing/pull/27) |
-| TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | ☐ | | |
+| TKT-F402 | Live Seat State updates over SSE (mock stream) | ✅ | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | [#27](https://github.com/anasha447/stadium-ticketing/pull/27) |
+| TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | 🔎 | [#28](https://github.com/anasha447/stadium-ticketing/issues/28) | |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ☐ last, after F304 | | |
 
 **TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
@@ -115,6 +115,14 @@ or let them go; a Hold on one of their seats gets the usual 409. A seat someone 
 pulses amber once in an open Block. A chosen seat that someone else takes is named and
 dropped at once, and seat view says so if the Fan is sitting in it.
 
+**TKT-F403 — Touch, phone, keyboard.** The mini-map can be used from the keyboard:
+Tab to it, arrow keys round the ring and between Levels, Enter to fly in; the Block
+under focus lights up in the stadium. A pinch zooms in seat view, a finger drag no
+longer leaves a hover card behind, and on a touch screen the hints say "tap" and
+"pinch". On a phone the Tier buttons, the "pick seats together" buttons and the links
+in "Your seats" are 44 px tall. With reduced motion a camera move fades in from dark
+instead of jumping.
+
 ## Carried forward
 
 Things noticed along the way that no ticket has closed yet. Each names the ticket that
@@ -122,15 +130,15 @@ should pick it up.
 
 | What | Found in | Goes to |
 |---|---|---|
-| The 3D view has not been seen at phone width or used by touch (the preview pauses the canvas at phone size) | F201–F204 | F403 |
-| Reduced motion is coded (cuts for flights, no auto-rotation) but not checked on a device | F203 | F403 |
-| The mini-map is pointer-only | F204 | F403 |
+| The 3D view has not been seen at phone width or used by touch on a real device: the panels were checked at 375 px, but the preview leaves the canvas black at that size | F201–F204, F403 | F404, on a phone |
+| Reduced motion is coded (fade-in cuts, no auto-rotation, no pulse) but not checked with the setting on; the preview cannot switch it | F203, F403 | F404 |
+| On a phone the mini-map is 82 × 98 px, too small to tap one Block reliably; tapping the stands is the way there | F403 | F404, if wanted |
 | "Pick seats together" is worked out in the browser; the backend's `mode=ADJACENT` is still not in the mock or used | F102, F302 | when the gateway exists |
-| A held seat pulses only when it is taken; at rest, and always with reduced motion, it differs by colour only (motion.md asks for a static outline) | F203, F402 | F403 |
+| A held seat pulses only when it is taken; at rest, and always with reduced motion, it differs by colour only (motion.md asks for a static outline) | F203, F402 | F404 |
 | The LED boards round the pitch and the two scoreboards from the brief are in no ticket | F401 | F404, if wanted |
-| "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F403 |
+| "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F404 |
 | The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | F404 |
-| "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F403 |
+| "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F404 |
 | The amber pulse and the "Another Fan has just taken this seat" line in seat view were not seen on screen at full speed; the taken-seat notice was | F402 | F404 |
 | The cost of rebuilding the fans on each stream update was not measured (the preview pane draws too few frames) | F402 | F404 |
 | New fans pop into a seat sold while the Block is open; they do not rise | F402 | F404, if wanted |
