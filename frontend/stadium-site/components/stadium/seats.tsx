@@ -10,7 +10,8 @@ import {
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { COLOR, type ColorToken } from "@/lib/design/tokens";
-import { blockSeatCount } from "@/lib/domain/seat-id";
+import type { ChosenSeat } from "@/lib/booking/selection";
+import { blockSeatCount, seatOffset } from "@/lib/domain/seat-id";
 import type { Block, Tier } from "@/lib/domain/types";
 import { buildSeats, SEAT_COLOURS } from "@/lib/stadium/seats";
 
@@ -22,6 +23,7 @@ import { buildSeats, SEAT_COLOURS } from "@/lib/stadium/seats";
 // Block the Fan has opened shows Seat State instead: available in its Tier
 // colour, held in amber, sold in grey. On top of either look a Block can be
 // lit (the pointer is over it) or dimmed (the legend is showing another Tier).
+// The Fan's own seats, chosen or held, are always shown in the "yours" colour.
 
 const TIER_COLOUR: Record<Tier, ColorToken> = {
   CLUB_PREMIUM: "tierPremium",
@@ -81,10 +83,13 @@ export function Seats({
   open,
   litBlockId,
   shownTier,
+  mine,
   reducedMotion,
 }: {
   blocks: Block[];
   open: OpenBlock | null;
+  /** The Fan's own seats: chosen, or in their Hold. */
+  mine: ChosenSeat[];
   /** The Block under the pointer, if any. */
   litBlockId: string | null;
   /** When set, Blocks of every other Tier are dimmed. */
@@ -127,13 +132,18 @@ export function Seats({
     const colours = mesh.current?.instanceColor?.array as Float32Array | undefined;
     if (!colours) return;
 
+    const yours = new Color(COLOR.stateMine);
     for (const block of blocks) {
       const isOpen = open?.blockId === block.id;
       const dimmed = !isOpen && shownTier !== null && block.tier !== shownTier;
       const lit = !isOpen && !dimmed && litBlockId === block.id;
-      const base = `${isOpen ? open.states : "mosaic"}|${dimmed ? "dim" : ""}`;
+      const own = mine
+        .filter((seat) => seat.blockId === block.id)
+        .map((seat) => seatOffset(block, seat.row, seat.seat))
+        .filter((offset) => offset >= 0);
+      const base = `${isOpen ? open.states : "mosaic"}|${dimmed ? "dim" : ""}|${own.join(",")}`;
       const look = `${base}|${lit ? "lit" : ""}`;
-      const before = looks.current.get(block.id) ?? "mosaic||";
+      const before = looks.current.get(block.id) ?? "mosaic|||";
       if (look === before) continue;
       looks.current.set(block.id, look);
 
@@ -154,6 +164,8 @@ export function Seats({
         if (dimmed) for (let i = 0; i < to.length; i++) to[i] *= DIMMED;
         if (lit) for (let i = 0; i < to.length; i++) to[i] += (1 - to[i]) * LIT;
       }
+      // The Fan's own seats keep their colour whatever the Block is doing.
+      for (const offset of own) yours.toArray(to, offset * 3);
 
       // If only the light went on or off, change quickly: it is feedback.
       const onlyLight = before.startsWith(`${base}|`);
@@ -167,7 +179,7 @@ export function Seats({
         seconds,
       });
     }
-  }, [open, litBlockId, shownTier, blocks, seats, reducedMotion]);
+  }, [open, litBlockId, shownTier, mine, blocks, seats, reducedMotion]);
 
   useFrame((_, delta) => {
     const attribute = mesh.current?.instanceColor;

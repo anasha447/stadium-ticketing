@@ -1,10 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { api } from "@/lib/api";
-import type { Block, Currency, SeatCounts, Tier } from "@/lib/domain/types";
+import { api, isProblem, PROBLEM } from "@/lib/api";
+import {
+  addSeat,
+  type ChosenSeat,
+  isChosen,
+  isFull,
+  removeSeat,
+  removeSeatIds,
+  seatIdOf,
+  seatsTogether,
+} from "@/lib/booking/selection";
+import type { Block, Currency, Hold, SeatCounts, Tier } from "@/lib/domain/types";
 import { formatCount, formatMoney, TIER_NAME, TIER_ORDER, TIER_SWATCH } from "@/lib/format";
+import { useNow } from "@/lib/hooks/use-now";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-reduced-motion";
 import { seatAtPoint, seatOnRay, type SeatRefInBlock } from "@/lib/stadium/layout";
 import {
@@ -16,10 +28,11 @@ import {
   viewReducer,
 } from "@/lib/stadium/view";
 import { seatView } from "@/lib/stadium/view-score";
-import { seatOffset } from "@/lib/domain/seat-id";
+import { parseSeatId, seatOffset } from "@/lib/domain/seat-id";
 import type { StandHit } from "./bowl";
 import type { Heading } from "./camera-rig";
 import { MiniMap } from "./mini-map";
+import { YourSeats } from "./your-seats";
 
 // The stadium a Fan moves through: the whole bowl, then a Block, then a seat.
 // This component decides where the Fan is and loads what that needs; the
@@ -42,6 +55,41 @@ export function StadiumLoading() {
 
 const QUIET_BUTTON =
   "h-11 rounded-control border border-night-700 px-4 text-sm font-semibold transition-colors duration-fast hover:bg-night-800 disabled:text-flood-500 disabled:hover:bg-transparent";
+
+/** The one orange button: the next thing the Fan should do. */
+const ACTION =
+  "h-12 rounded-control bg-signal-500 px-6 font-semibold text-signal-ink transition-colors duration-fast hover:bg-signal-400 active:bg-signal-600 disabled:bg-night-800 disabled:text-flood-500";
+/** A button that matters but is not the next step. */
+const STRONG =
+  "h-12 rounded-control border border-flood-300 px-6 font-semibold transition-colors duration-fast hover:bg-night-800 disabled:border-night-700 disabled:text-flood-500";
+
+// The id of the Fan's Hold is kept for this tab, so a reload does not lose it.
+const holdKey = (matchId: number) => `stadium.hold.${matchId}`;
+function readHoldId(matchId: number): string | null {
+  try {
+    return window.sessionStorage.getItem(holdKey(matchId));
+  } catch {
+    return null;
+  }
+}
+function saveHoldId(matchId: number, holdId: string | null) {
+  try {
+    if (holdId) window.sessionStorage.setItem(holdKey(matchId), holdId);
+    else window.sessionStorage.removeItem(holdKey(matchId));
+  } catch {
+    // Without storage the Hold simply does not survive a reload.
+  }
+}
+
+/** The seats of a Hold, as places in the stadium. */
+const seatsOf = (hold: Hold): ChosenSeat[] =>
+  hold.seatIds.flatMap((seatId) => parseSeatId(seatId) ?? []);
+
+/** "Block 107 row 03 seat 05", for messages. */
+function seatWords(seatId: string): string {
+  const seat = parseSeatId(seatId);
+  return seat ? `Block ${seat.blockId} row ${pad(seat.row)} seat ${pad(seat.seat)}` : seatId;
+}
 
 const STATE_WORD: Record<string, string> = { A: "Available", H: "Held", S: "Sold" };
 
@@ -79,6 +127,15 @@ export function StadiumExperience({
   const [shownTier, setShownTier] = useState<Tier | null>(null);
   const heading = useRef<Heading>({ x: 0, z: 0 });
   const card = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const now = useNow();
+  /** Seats chosen but not held yet. */
+  const [chosen, setChosen] = useState<ChosenSeat[]>([]);
+  const [hold, setHold] = useState<Hold | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  /** On a phone the drawer covers the panel, so it opens only when asked. */
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const blockId = view.kind === "stadium" ? null : view.blockId;
   const block = blockId ? blocks.find((b) => b.id === blockId) : undefined;
@@ -98,6 +155,42 @@ export function StadiumExperience({
       cancelled = true;
     };
   }, [matchId]);
+
+  // A Hold outlives a reload: read it back if this tab made one.
+  useEffect(() => {
+    const holdId = readHoldId(matchId);
+    if (!holdId) return;
+    let cancelled = false;
+    api
+      .getHold(matchId, holdId)
+      .then((kept) => {
+        if (cancelled) return;
+        setHold(kept);
+        setChosen(seatsOf(kept));
+      })
+      .catch(() => saveHoldId(matchId, null));
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
+  /** Reads Seat States and seats left again, after a Hold changed them. */
+  const refresh = useCallback(
+    (blockIds: string[]) => {
+      const ids = [...new Set(blockIds)];
+      if (ids.length > 0) {
+        api
+          .getSeatStates(matchId, ids)
+          .then((result) => setStates((known) => ({ ...known, ...result.blocks })))
+          .catch(() => {});
+      }
+      api
+        .getOccupancy(matchId)
+        .then((occupancy) => setCounts(occupancy.blocks))
+        .catch(() => {});
+    },
+    [matchId],
+  );
 
   // Seat States are per Fan and change by the second, so they are read here
   // in the browser when a Block is opened, never on the server.
@@ -124,6 +217,9 @@ export function StadiumExperience({
     [blockId, blockStates],
   );
 
+  /** The Fan's own seats: the ones in their Hold, or the ones chosen so far. */
+  const mine = useMemo(() => (hold ? seatsOf(hold) : chosen), [hold, chosen]);
+
   /** The seat a pointer on the stands is aimed at. */
   const aimedAt = useCallback(
     (hit: StandHit): SeatRefInBlock | null => {
@@ -143,12 +239,13 @@ export function StadiumExperience({
         dispatch({ type: "openBlock", blockId: aimed.block.id });
         return;
       }
-      // In the open Block, only an available seat can be sat in.
-      if (blockStates && isAvailable(aimed.block, blockStates, aimed.row, aimed.seat)) {
+      // In the open Block, only an available seat can be sat in, or one of the Fan's own.
+      const own = isChosen(mine, { blockId: aimed.block.id, row: aimed.row, seat: aimed.seat });
+      if (own || (blockStates && isAvailable(aimed.block, blockStates, aimed.row, aimed.seat))) {
         dispatch({ type: "sit", blockId: aimed.block.id, row: aimed.row, seat: aimed.seat });
       }
     },
-    [aimedAt, blockId, blockStates],
+    [aimedAt, blockId, blockStates, mine],
   );
 
   const viewKind = view.kind;
@@ -217,6 +314,84 @@ export function StadiumExperience({
     return () => window.removeEventListener("keydown", onKey);
   }, [moves, sit]);
 
+  const current: ChosenSeat | null =
+    view.kind === "seat" ? { blockId: view.blockId, row: view.row, seat: view.seat } : null;
+
+  const addCurrent = () => {
+    if (!current) return;
+    setChosen((list) => addSeat(list, current));
+    setNotice(null);
+  };
+
+  const pickTogether = (count: number) => {
+    if (!block || !blockStates) return;
+    const picked = seatsTogether(block, blockStates, count);
+    if (picked) {
+      setChosen(picked);
+      setNotice(null);
+      setDrawerOpen(true);
+    } else {
+      setNotice(`Block ${block.id} has no ${count} available seats together. Try another Block.`);
+      setChosen([]);
+      setDrawerOpen(true);
+    }
+  };
+
+  const holdSeats = () => {
+    setBusy(true);
+    setNotice(null);
+    const blockIds = chosen.map((seat) => seat.blockId);
+    api
+      .createHold(matchId, { mode: "EXPLICIT", seatIds: chosen.map(seatIdOf) })
+      .then((made) => {
+        setHold(made);
+        saveHoldId(matchId, made.holdId);
+        refresh(blockIds);
+      })
+      .catch((error: unknown) => {
+        if (isProblem(error, PROBLEM.seatsUnavailable)) {
+          // Name the seats that went, drop them, keep the rest chosen.
+          const taken = error.conflictingSeatIds;
+          setChosen((list) => removeSeatIds(list, taken));
+          setNotice(
+            `Taken while you were choosing: ${taken.map(seatWords).join(", ")}. ` +
+              "Your other seats are still chosen.",
+          );
+          refresh(blockIds);
+        } else if (isProblem(error, PROBLEM.purchaseLimit)) {
+          setNotice(error.detail ?? "You can have four seats for one Match.");
+        } else if (isProblem(error, PROBLEM.notAdmitted)) {
+          router.replace(`/matches/${matchId}/waiting-room`);
+        } else {
+          setNotice("Your seats could not be held just now. Try again.");
+        }
+      })
+      .finally(() => setBusy(false));
+  };
+
+  /** Gives the Hold up, or clears one that ran out. The seats stay chosen. */
+  const letGo = (release: boolean) => {
+    if (!hold) return;
+    const blockIds = seatsOf(hold).map((seat) => seat.blockId);
+    const done = () => {
+      setHold(null);
+      saveHoldId(matchId, null);
+      setNotice(null);
+      refresh(blockIds);
+    };
+    if (!release) return done();
+    setBusy(true);
+    api
+      .releaseHold(matchId, hold.holdId)
+      .catch(() => {
+        // Already gone on the backend, which is what was wanted.
+      })
+      .finally(() => {
+        setBusy(false);
+        done();
+      });
+  };
+
   const seated = view.kind === "seat" && block ? seatView(block, view.row, view.seat) : null;
   const litBlockId = hover?.kind === "block" ? hover.blockId : null;
   const tierPrice = useMemo(() => {
@@ -234,6 +409,7 @@ export function StadiumExperience({
           open={open}
           litBlockId={litBlockId}
           shownTier={shownTier}
+          mine={mine}
           reducedMotion={reducedMotion}
           heading={heading}
           onStandClick={handleStandClick}
@@ -321,6 +497,22 @@ export function StadiumExperience({
                   )}
                 </p>
                 <StateKey tierSwatch={TIER_SWATCH[block.tier]} />
+                {blockStates && !hold && (
+                  <div className="flex items-center gap-2 text-sm text-flood-300">
+                    <span className="flex-1">Pick seats together</span>
+                    {[2, 3, 4].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        aria-label={`Pick ${count} seats together`}
+                        className="data size-9 rounded-control border border-night-700 text-flood-50 transition-colors duration-fast hover:bg-night-800"
+                        onClick={() => pickTogether(count)}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -354,6 +546,40 @@ export function StadiumExperience({
                     </dd>
                   </div>
                 </dl>
+                {current && hold && (
+                  <p className="text-sm text-flood-300">
+                    {isChosen(mine, current)
+                      ? "This seat is held for you."
+                      : "Your seats are held. Release them to choose different ones."}
+                  </p>
+                )}
+                {current && !hold && isChosen(chosen, current) && (
+                  <button
+                    type="button"
+                    className={QUIET_BUTTON}
+                    onClick={() => setChosen((list) => removeSeat(list, current))}
+                  >
+                    Remove from your seats
+                  </button>
+                )}
+                {current && !hold && !isChosen(chosen, current) && (
+                  <>
+                    <button
+                      type="button"
+                      // Orange until something is chosen; after that "Hold seats" is the next step.
+                      className={chosen.length === 0 ? ACTION : STRONG}
+                      disabled={isFull(chosen)}
+                      onClick={addCurrent}
+                    >
+                      Add seat
+                    </button>
+                    {isFull(chosen) && (
+                      <p className="text-xs text-flood-500">
+                        You have four seats, the most for one Match.
+                      </p>
+                    )}
+                  </>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" className={QUIET_BUTTON} disabled={!moves?.left} onClick={() => sit(moves?.left ?? null)}>
                     Seat to the left
@@ -380,7 +606,40 @@ export function StadiumExperience({
             </button>
           </>
         )}
+
+        {mine.length > 0 && (
+          <button
+            type="button"
+            className={`${QUIET_BUTTON} sm:hidden`}
+            onClick={() => setDrawerOpen(true)}
+          >
+            Your seats ({mine.length})
+          </button>
+        )}
       </section>
+
+      {(mine.length > 0 || notice) && (
+        <YourSeats
+          blocks={blocks}
+          currency={currency}
+          chosen={chosen}
+          hold={hold}
+          now={now}
+          busy={busy}
+          notice={notice}
+          checkoutHref={hold ? `/matches/${matchId}/checkout/${hold.holdId}` : null}
+          shown={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          onView={(seat) => {
+            dispatch({ type: "sit", ...seat });
+            setDrawerOpen(false);
+          }}
+          onRemove={(seat) => setChosen((list) => removeSeat(list, seat))}
+          onHold={holdSeats}
+          onRelease={() => letGo(true)}
+          onStartAgain={() => letGo(false)}
+        />
+      )}
 
       {/* The four Tiers. Pressing one dims every Block of the other Tiers. */}
       <section

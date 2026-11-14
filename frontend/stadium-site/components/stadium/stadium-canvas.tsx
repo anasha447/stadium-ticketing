@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { useMemo } from "react";
+import type { ChosenSeat } from "@/lib/booking/selection";
 import { COLOR } from "@/lib/design/tokens";
 import type { Block, Level, Tier } from "@/lib/domain/types";
 import { STADIUM_FOV } from "@/lib/stadium/camera";
@@ -20,6 +21,7 @@ export default function StadiumCanvas({
   open,
   litBlockId,
   shownTier,
+  mine,
   reducedMotion,
   heading,
   onStandClick,
@@ -30,6 +32,7 @@ export default function StadiumCanvas({
   open: OpenBlock | null;
   litBlockId: string | null;
   shownTier: Tier | null;
+  mine: ChosenSeat[];
   reducedMotion: boolean;
   heading: { current: Heading };
   onStandClick: (hit: StandHit) => void;
@@ -69,6 +72,7 @@ export default function StadiumCanvas({
         open={open}
         litBlockId={litBlockId}
         shownTier={shownTier}
+        mine={mine}
         reducedMotion={reducedMotion}
       />
 

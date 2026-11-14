@@ -63,8 +63,8 @@ is looking, and a view score out of 100 with the distance to the pitch.
 
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
-| TKT-F301 | Waiting Room screen with the Draw animation | 🔎 | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
-| TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ☐ | | |
+| TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
+| TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | 🔎 | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
 | TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ☐ | | |
 | TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ☐ | | |
 
@@ -74,6 +74,15 @@ watches it count down at 200 Fans a second until they are admitted. The picture 
 the crowd as dots: at the Draw every dot moves at once into a queue, and the front of the
 queue goes in through the top. Admission lasts 30 minutes; the stadium page sends anyone
 without it back here, and the mock refuses a Hold without it.
+
+**TKT-F302 — Your seats and the Hold.** In a seat, "Add seat" puts it in "Your seats",
+up to four; in a Block, "Pick seats together" chooses 2, 3 or 4 free neighbours. Chosen
+seats show in their own colour in the stadium. "Hold seats" makes the Hold, and the
+drawer then shows the eight-minute countdown and the Quote: one line per seat, the Group
+Discount where it applies, and the total. If a seat was taken meanwhile it is named and
+dropped and the rest stay chosen. A Hold survives a reload, can be released, and says so
+when it runs out. "Continue to checkout" opens a page that shows the time left and the
+total; paying comes with F303.
 
 ## Sprint F4 — Atmosphere and polish
 
@@ -94,8 +103,10 @@ should pick it up.
 | The 3D view has not been seen at phone width or used by touch (the preview pauses the canvas at phone size) | F201–F204 | F403 |
 | Reduced motion is coded (cuts for flights, no auto-rotation) but not checked on a device | F203 | F403 |
 | The mini-map is pointer-only | F204 | F403 |
-| "Pick for me" (`mode=ADJACENT`) is not in the mock | F102 | F302 |
-| "Yours" seat colour and the non-colour cues for seat state (pulse for held, fans on sold) | F203 | F302, F401, F402 |
+| "Pick seats together" is worked out in the browser; the backend's `mode=ADJACENT` is still not in the mock or used | F102, F302 | when the gateway exists |
+| Non-colour cues for seat state (pulse for held, fans on sold). The "yours" colour is done | F203 | F401, F402 |
+| "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F403 |
+| The taken-seat notice was checked by faking another Hold in the mock's storage; nothing in the mock takes seats on its own yet | F302 | F402 |
 | Dragging during a camera flight waits for the landing | F203 | F404, if it feels wrong in use |
 | The full `impeccable` and `ui-taste` reviews were skipped from F202 on | F202–F204 | F404 |
 | The roof is a short, see-through ring; the plan is a rounded rectangle, not the real oval | F201 | F401, if wanted |
