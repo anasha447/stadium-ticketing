@@ -70,7 +70,7 @@ is looking, and a view score out of 100 with the distance to the pitch.
 | TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ✅ | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
 | TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ✅ | [#30](https://github.com/anasha447/stadium-ticketing/issues/30) | [#31](https://github.com/anasha447/stadium-ticketing/pull/31) |
-| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | 🔎 | [#32](https://github.com/anasha447/stadium-ticketing/issues/32) | |
+| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | 🔎 | [#32](https://github.com/anasha447/stadium-ticketing/issues/32) | [#33](https://github.com/anasha447/stadium-ticketing/pull/33) |
 
 **TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
 button, sees how many are waiting and a countdown to the Draw, then gets a place and
