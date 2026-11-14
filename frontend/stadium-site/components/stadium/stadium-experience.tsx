@@ -25,7 +25,7 @@ import {
 import type { Block, Currency, Hold, SeatCounts, SeatDelta, Tier } from "@/lib/domain/types";
 import { formatCount, formatMoney, TIER_NAME, TIER_ORDER, TIER_SWATCH } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
-import { usePrefersReducedMotion } from "@/lib/hooks/use-reduced-motion";
+import { usePrefersReducedMotion, useTouchScreen } from "@/lib/hooks/use-reduced-motion";
 import { seatAtPoint, seatOnRay, type SeatRefInBlock } from "@/lib/stadium/layout";
 import { applyDeltas, countSeats, takenSeats } from "@/lib/stadium/live-seats";
 import {
@@ -138,6 +138,28 @@ export function StadiumExperience({
 }) {
   const [view, dispatch] = useReducer(viewReducer, STADIUM);
   const reducedMotion = usePrefersReducedMotion();
+  const touch = useTouchScreen();
+
+  // With reduced motion the camera does not fly; it cuts. So the cut is not
+  // a jolt, the new view fades in from the night colour. This runs through
+  // the Web Animations API, which the reduced-motion rule for CSS
+  // animations in globals.css leaves alone.
+  const curtain = useRef<HTMLDivElement>(null);
+  const firstView = useRef(true);
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false;
+      return;
+    }
+    if (!reducedMotion || !curtain.current) return;
+    const style = getComputedStyle(document.documentElement);
+    curtain.current.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: parseFloat(style.getPropertyValue("--duration-base")) || 220,
+      easing: style.getPropertyValue("--ease-out").trim() || "ease-out",
+    });
+  }, [view, reducedMotion]);
+  /** "Click" or "Tap", for the hints. */
+  const press = touch ? "Tap" : "Click";
   /** Seat States by Block id: read when the Match stream opens, then kept up to date by it. */
   const [states, setStates] = useState<Record<string, string>>({});
   /** The seat changes of the last half minute, newest last. */
@@ -146,6 +168,8 @@ export function StadiumExperience({
   const [matchStarted, setMatchStarted] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
+  /** The Block the keyboard is on in the mini-map. */
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
   const [shownTier, setShownTier] = useState<Tier | null>(null);
   const heading = useRef<Heading>({ x: 0, z: 0 });
   const card = useRef<HTMLDivElement>(null);
@@ -452,7 +476,7 @@ export function StadiumExperience({
     blockStates !== undefined &&
     !isChosen(mine, current) &&
     blockStates[seatOffset(block, current.row, current.seat)] !== "A";
-  const litBlockId = hover?.kind === "block" ? hover.blockId : null;
+  const litBlockId = hover?.kind === "block" ? hover.blockId : mapFocus;
   const tierPrice = useMemo(() => {
     const price = {} as Record<Tier, string>;
     for (const b of blocks) price[b.tier] = b.basePrice;
@@ -476,6 +500,7 @@ export function StadiumExperience({
           onStandClick={handleStandClick}
           onStandHover={handleStandHover}
         />
+        <div ref={curtain} aria-hidden className="pointer-events-none absolute inset-0 bg-night-950 opacity-0" />
       </div>
 
       {/* Where the Fan is, and what they can do there. A sheet at the bottom on a phone. */}
@@ -521,8 +546,8 @@ export function StadiumExperience({
           <>
             <h1 className="display text-2xl">{title}</h1>
             <p className="text-sm text-flood-300">
-              Click a Block to fly in. Drag to spin the stadium, scroll or pinch
-              to zoom.
+              {press} a Block to fly in. Drag to spin the stadium,{" "}
+              {touch ? "pinch" : "scroll"} to zoom.
             </p>
             {reducedMotion && (
               <button
@@ -563,7 +588,7 @@ export function StadiumExperience({
                       <span className="data text-base text-flood-50">
                         {formatMoney(block.basePrice, currency)}
                       </span>
-                      . Click one to sit in it.
+                      . {press} one to sit in it.
                     </>
                   )}
                 </p>
@@ -576,7 +601,7 @@ export function StadiumExperience({
                         key={count}
                         type="button"
                         aria-label={`Pick ${count} seats together`}
-                        className="data size-9 rounded-control border border-night-700 text-flood-50 transition-colors duration-fast hover:bg-night-800"
+                        className="data size-11 rounded-control sm:size-9 border border-night-700 text-flood-50 transition-colors duration-fast hover:bg-night-800"
                         onClick={() => pickTogether(count)}
                       >
                         {count}
@@ -671,10 +696,14 @@ export function StadiumExperience({
                     Row behind
                   </button>
                 </div>
-                <p className="hidden text-xs text-flood-500 sm:block">
-                  Drag to look around, scroll to zoom. The arrow keys move you
-                  to the next available seat.
-                </p>
+                {touch ? (
+                  <p className="text-xs text-flood-500">Drag to look around, pinch to zoom.</p>
+                ) : (
+                  <p className="hidden text-xs text-flood-500 sm:block">
+                    Drag to look around, scroll to zoom. The arrow keys move you
+                    to the next available seat.
+                  </p>
+                )}
               </>
             )}
 
@@ -730,7 +759,7 @@ export function StadiumExperience({
                 type="button"
                 aria-pressed={shownTier === tier}
                 onClick={() => setShownTier((current) => (current === tier ? null : tier))}
-                className={`flex h-9 w-full items-center gap-2 rounded-control px-2 text-left text-sm transition-colors duration-fast hover:bg-night-800 ${
+                className={`flex h-11 w-full items-center sm:h-9 gap-2 rounded-control px-2 text-left text-sm transition-colors duration-fast hover:bg-night-800 ${
                   shownTier === tier ? "bg-night-800 text-flood-50" : "text-flood-300"
                 }`}
               >
@@ -752,6 +781,7 @@ export function StadiumExperience({
           heading={heading}
           onOpenBlock={(id) => dispatch({ type: "openBlock", blockId: id })}
           onHoverBlock={handleMapHover}
+          onFocusBlock={setMapFocus}
         />
       </section>
 

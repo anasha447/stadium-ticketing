@@ -36,6 +36,10 @@ interface Flight {
 /** How far ahead the camera is taken to be looking when a flight starts from a seat. */
 const LOOK_AHEAD = 60;
 
+/** How far a seated Fan can zoom in, and out, as a field of view in degrees. */
+const MIN_SEAT_FOV = 20;
+const MAX_SEAT_FOV = 70;
+
 const facing = new Vector3();
 
 /** Notes which way the camera faces along the ground. */
@@ -218,19 +222,62 @@ export function CameraRig({
     camera.lookAt(look.current);
   });
 
-  // Seated, the wheel zooms by narrowing the view, not by moving the camera.
+  // Seated, the wheel and a pinch zoom by narrowing the view, not by moving
+  // the camera.
   useEffect(() => {
     if (view.kind !== "seat") return;
-    const { gl, camera: anyCamera } = get();
+    const { gl, events, camera: anyCamera } = get();
     const camera = anyCamera as PerspectiveCamera;
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
+    // The element the orbit controls listen on. They capture the pointer
+    // there, so the fingers' moves are only seen on that element.
+    const element = (events.connected as HTMLElement | undefined) ?? gl.domElement;
+    const zoom = (by: number) => {
       if (flight.current) return;
-      camera.fov = MathUtils.clamp(camera.fov + event.deltaY * 0.03, 20, 70);
+      camera.fov = MathUtils.clamp(camera.fov * by, MIN_SEAT_FOV, MAX_SEAT_FOV);
       camera.updateProjectionMatrix();
     };
-    gl.domElement.addEventListener("wheel", onWheel, { passive: false });
-    return () => gl.domElement.removeEventListener("wheel", onWheel);
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      zoom(Math.exp(event.deltaY * 0.0006));
+    };
+
+    // Two fingers apart narrow the view; together widen it.
+    const fingers = new Map<number, { x: number; y: number }>();
+    let spread = 0;
+    const apart = () => {
+      const [a, b] = [...fingers.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+    const onDown = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+      fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (fingers.size === 2) spread = apart();
+    };
+    const onMove = (event: PointerEvent) => {
+      if (!fingers.has(event.pointerId)) return;
+      fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (fingers.size !== 2 || spread === 0) return;
+      const now = apart();
+      zoom(spread / now);
+      spread = now;
+    };
+    const onUp = (event: PointerEvent) => {
+      fingers.delete(event.pointerId);
+      spread = 0;
+    };
+
+    element.addEventListener("wheel", onWheel, { passive: false });
+    element.addEventListener("pointerdown", onDown);
+    element.addEventListener("pointermove", onMove);
+    element.addEventListener("pointerup", onUp);
+    element.addEventListener("pointercancel", onUp);
+    return () => {
+      element.removeEventListener("wheel", onWheel);
+      element.removeEventListener("pointerdown", onDown);
+      element.removeEventListener("pointermove", onMove);
+      element.removeEventListener("pointerup", onUp);
+      element.removeEventListener("pointercancel", onUp);
+    };
   }, [view.kind, get]);
 
   return (

@@ -41,7 +41,9 @@ Ordered by impact. Spend effort in this order.
 
 With `prefers-reduced-motion: reduce`:
 
-- camera flights become a 200ms cross-fade cut to the destination,
+- camera flights become a cut to the destination that fades in from `night-950` over
+  `duration-base` (run with the Web Animations API, which the CSS reduced-motion rule
+  leaves alone),
 - auto-rotation and the live match are off by default (a button turns them on),
 - pulses become a static outline,
 - the Draw shows the final order without the shuffle.

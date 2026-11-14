@@ -160,6 +160,14 @@ to about 12%. In seat view the fans within 1.3 m of the Fan's own seat are left 
 the heads in the row in front do not cover the pitch. The south end wears the visiting
 colours, everyone else the home colours.
 
+**Touch, keyboard and reduced motion.** One finger drags to spin or look around, two
+fingers zoom; in seat view a pinch narrows the field of view, as the wheel does. Moving
+a finger never opens a hover card. On a touch screen (`pointer: coarse`) the hints say
+"tap" and "pinch". On a phone every button is at least 44 px tall. The mini-map is one
+stop in the Tab order: arrow keys go round the ring (`mapStep` in `minimap.ts`) and
+between Levels, the Block under focus lights up in the stadium, and Enter or Space flies
+there. With reduced motion a camera move is a cut that fades in from the night colour.
+
 **The match** is a loop, not a simulation: `matchAt(seconds)` places everyone from the
 time alone. The ball drifts on slow waves, each side keeps its shape and slides towards
 the ball, and whoever is close goes to it. Nobody scores and there is no scoreboard.
