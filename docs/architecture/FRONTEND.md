@@ -87,13 +87,18 @@ together in one Row), a taken seat returns 409 with `conflictingSeatIds`, and th
 lib/domain/stadium.ts     how the 40 Blocks of a Level go around the bowl (12 / 8 / 12 / 8)
 lib/stadium/layout.ts     where every Block, Row and seat is, in metres. Pure maths, tested
 lib/stadium/geometry.ts   turns those numbers into meshes by sweeping a cross-section round the ring
+lib/stadium/seats.ts      one transform and one colour per seat, in Seat States order
+lib/stadium/mosaic.ts     the colour of each seat in stadium view: bands plus the three yellow marks
+lib/stadium/mark-bitmaps.ts  the crest and the Spotify symbol as bitmaps (made by scripts/make-marks.py)
 lib/design/tokens.ts      the colours 3D code may use, checked against globals.css by a test
 components/stadium/       the React Three Fiber scene: bowl, pitch, canvas and controls
 ```
 
 The Seat Map says how many Rows and seats a Block has; `layout.ts` says where they are.
 Terraces, seats and camera all read the same module, so a seat can never float off its
-step. The canvas is loaded only in the browser and only on the seats page.
+step. All 60,560 seats are one instanced mesh, and seat number `i` in that mesh is
+character `i` of the Seat States strings read Block by Block, so recolouring a seat by
+its state is a lookup, not a search. The canvas is loaded only in the browser and only on the seats page.
 
 ## 5. Errors
 
