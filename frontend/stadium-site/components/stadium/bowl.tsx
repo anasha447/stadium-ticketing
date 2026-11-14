@@ -7,7 +7,7 @@ import { DoubleSide } from "three";
 import { COLOR } from "@/lib/design/tokens";
 import type { Level } from "@/lib/domain/types";
 import { levelBack, sweep, terraceProfile, type ProfilePoint } from "@/lib/stadium/geometry";
-import { FACADE_HEIGHT, LEVEL_PROFILE, OUTER_DEPTH } from "@/lib/stadium/layout";
+import { FACADE_HEIGHT, LEVEL_PROFILE, OUTER_DEPTH, ROOF_INNER_DEPTH } from "@/lib/stadium/layout";
 
 // The building: three stepped Levels, the outer wall and the roof ring.
 // Every part is a cross-section swept around the ring (lib/stadium/geometry).
@@ -16,9 +16,6 @@ const LEVELS: Level[] = ["LOWER", "CLUB", "UPPER"];
 
 /** Height of the white band along the front edge of the club and upper Levels. */
 const FASCIA = 2.2;
-
-/** How far in from the outer wall the roof reaches, as a depth. */
-const ROOF_INNER_DEPTH = 46;
 
 /** Where the pointer met a stand: the point on the concrete, and the line of sight that hit it. */
 export interface StandHit {

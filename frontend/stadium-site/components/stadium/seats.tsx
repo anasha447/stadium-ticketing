@@ -13,7 +13,7 @@ import { COLOR, type ColorToken } from "@/lib/design/tokens";
 import type { ChosenSeat } from "@/lib/booking/selection";
 import { blockSeatCount, seatOffset } from "@/lib/domain/seat-id";
 import type { Block, Tier } from "@/lib/domain/types";
-import { buildSeats, SEAT_COLOURS } from "@/lib/stadium/seats";
+import { SEAT_COLOURS, type SeatInstances } from "@/lib/stadium/seats";
 
 // Every seat in the stadium, drawn as one instanced mesh: the seat shape is
 // sent to the graphics card once and repeated 60,000 times, each copy with
@@ -80,6 +80,7 @@ function seatShape() {
 
 export function Seats({
   blocks,
+  seats,
   open,
   litBlockId,
   shownTier,
@@ -87,6 +88,8 @@ export function Seats({
   reducedMotion,
 }: {
   blocks: Block[];
+  /** Where every seat is, and its mosaic colour. */
+  seats: SeatInstances;
   open: OpenBlock | null;
   /** The Fan's own seats: chosen, or in their Hold. */
   mine: ChosenSeat[];
@@ -98,7 +101,6 @@ export function Seats({
 }) {
   const mesh = useRef<InstancedMesh>(null);
   const shape = useMemo(() => seatShape(), []);
-  const seats = useMemo(() => buildSeats(blocks), [blocks]);
   /** The mosaic colour of every seat, kept so a Block can go back to it. */
   const mosaic = useRef(new Float32Array(0));
   const fades = useRef<Fade[]>([]);

@@ -45,6 +45,10 @@
   --color-scene-turf-light: #2f8f46; /* mowing stripes */
   --color-scene-turf-dark: #277c3c;
   --color-scene-turf-edge: #1d5c30; /* run-off around the pitch */
+  --color-scene-kit-away: #3d9be0; /* the visiting side's blue, worn with white */
+  --color-scene-kit-keeper: #b8e34a; /* goalkeepers */
+  --color-scene-skin-light: #e3b592; /* people: heads run between these two */
+  --color-scene-skin-dark: #7a4f35;
 
   /* Messages only */
   --color-ok: #3ddc84;

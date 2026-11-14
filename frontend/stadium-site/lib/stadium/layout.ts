@@ -48,6 +48,8 @@ export const LEVEL_PROFILE: Record<Level, LevelProfile> = {
 /** Depth of the outer wall, measured like every other depth. */
 export const OUTER_DEPTH = 59;
 export const FACADE_HEIGHT = 42;
+/** How far in from the front of the bowl the roof reaches, as a depth. */
+export const ROOF_INNER_DEPTH = 46;
 
 /** Part of a Block's width left empty at each edge, which makes the aisles. */
 export const AISLE_SHARE = 0.06;

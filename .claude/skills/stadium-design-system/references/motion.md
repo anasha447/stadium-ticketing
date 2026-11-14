@@ -51,6 +51,7 @@ The experience must be complete this way, not degraded: every state still reads.
 ## Performance budget
 
 60 fps on a mid-range laptop, 30 fps on a phone. Seats and fans are instanced. Fans on
-sold seats are only drawn for the Blocks near the camera. If a frame budget is missed,
+sold seats are drawn in full only for the Blocks near the camera; the rest of the
+stadium gets a one-block figure, and the stadium view has no fans at all. If a frame budget is missed,
 remove decoration (stars, crowd detail, LED boards) before touching the booking
 animations 1–5.
