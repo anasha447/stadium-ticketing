@@ -1,44 +1,32 @@
 "use client";
 
-import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo } from "react";
 import { COLOR } from "@/lib/design/tokens";
 import type { Block, Level } from "@/lib/domain/types";
-import { Bowl } from "./bowl";
+import { STADIUM_FOV } from "@/lib/stadium/camera";
+import type { View } from "@/lib/stadium/view";
+import { Bowl, type StandClick } from "./bowl";
+import { CameraRig } from "./camera-rig";
 import { Pitch } from "./pitch";
-import { Seats } from "./seats";
+import { type OpenBlock, Seats } from "./seats";
 
-// The 3D view. Drag to spin, scroll or pinch to zoom. It turns slowly by
-// itself until the Fan touches it, and never turns by itself for Fans who
-// asked their device for reduced motion.
+// The 3D scene. It draws what it is told: which view the camera should be
+// in and which Block is open. Deciding those is StadiumExperience's job.
 
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-const FOV = 38;
-/** The point the camera turns around: the middle of the pitch, a little above it. */
-const TARGET: [number, number, number] = [0, 10, 0];
-/** The direction the opening view looks from: the south-east, well above the roof. */
-const VIEW_FROM: [number, number, number] = [0.5, 0.52, 0.7];
-/** Distance at which the whole bowl fits a wide screen. */
-const FIT_DISTANCE = 360;
-
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = window.matchMedia(REDUCED_MOTION);
-      query.addEventListener("change", onChange);
-      return () => query.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(REDUCED_MOTION).matches,
-    () => false,
-  );
-}
-
-export default function StadiumCanvas({ blocks }: { blocks: Block[] }) {
-  const reducedMotion = usePrefersReducedMotion();
-  const [touched, setTouched] = useState(false);
-
+export default function StadiumCanvas({
+  blocks,
+  view,
+  open,
+  reducedMotion,
+  onStandClick,
+}: {
+  blocks: Block[];
+  view: View;
+  open: OpenBlock | null;
+  reducedMotion: boolean;
+  onStandClick: (click: StandClick) => void;
+}) {
   // The terraces have one step per Row, so they need the Row count per Level.
   const rows = useMemo(() => {
     const count = {} as Record<Level, number>;
@@ -48,16 +36,9 @@ export default function StadiumCanvas({ blocks }: { blocks: Block[] }) {
 
   return (
     <Canvas
-      camera={{ fov: FOV, near: 1, far: 4000 }}
-      onCreated={({ camera, size }) => {
-        // Start far enough back to see the whole bowl. A tall, narrow screen
-        // sees less from side to side, so it starts further away.
-        const distance = FIT_DISTANCE * Math.max(1, 1.3 / (size.width / size.height));
-        camera.position.set(...VIEW_FROM).setLength(distance);
-        camera.lookAt(...TARGET);
-      }}
+      camera={{ fov: STADIUM_FOV, near: 1, far: 4000 }}
       dpr={[1, 2]}
-      aria-label="The stadium in 3D. Drag to spin it, scroll to zoom."
+      aria-label="The stadium in 3D"
       role="img"
     >
       <color attach="background" args={[COLOR.night950]} />
@@ -74,8 +55,8 @@ export default function StadiumCanvas({ blocks }: { blocks: Block[] }) {
       ))}
 
       <Pitch />
-      <Bowl rows={rows} />
-      <Seats blocks={blocks} />
+      <Bowl rows={rows} onStandClick={onStandClick} />
+      <Seats blocks={blocks} open={open} reducedMotion={reducedMotion} />
 
       {/* The ground outside the stadium. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
@@ -83,18 +64,7 @@ export default function StadiumCanvas({ blocks }: { blocks: Block[] }) {
         <meshStandardMaterial color={COLOR.night900} roughness={1} />
       </mesh>
 
-      <OrbitControls
-        target={TARGET}
-        enablePan={false}
-        enableDamping
-        minDistance={70}
-        maxDistance={1000}
-        // Stay above the ground, and never look straight up from below it.
-        maxPolarAngle={Math.PI / 2 - 0.08}
-        autoRotate={!touched && !reducedMotion}
-        autoRotateSpeed={0.35}
-        onStart={() => setTouched(true)}
-      />
+      <CameraRig view={view} blocks={blocks} reducedMotion={reducedMotion} />
     </Canvas>
   );
 }

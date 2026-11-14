@@ -160,3 +160,138 @@ export function blockCentre(block: Block): SeatPlace {
 
 /** How many Blocks each side has, in ring order. */
 export const SIDE_BLOCKS = SIDES.map((side) => side.blocks);
+
+// --- From a point back to a seat -------------------------------------------
+
+export interface RingPlace {
+  /** Ring position, 0 to 40, as in ringPoint. */
+  position: number;
+  depth: number;
+}
+
+const SIDE_START = SIDES.map((_, i) => SIDES.slice(0, i).reduce((sum, s) => sum + s.blocks, 0));
+
+/** The reverse of ringPoint: which ring position and depth a ground point is at. */
+export function locate(x: number, z: number): RingPlace {
+  const overX = Math.abs(x) - CX;
+  const overZ = Math.abs(z) - CZ;
+
+  let sideIndex: number;
+  let radius: number;
+  let along: number;
+
+  if (overX > 0 && overZ > 0) {
+    // Beside a corner: measure round the arc from the middle of the corner.
+    const corner = x < 0 ? (z > 0 ? 0 : 1) : z < 0 ? 2 : 3;
+    const centre = CORNERS[corner];
+    radius = Math.hypot(x - centre.x, z - centre.z);
+    const middle = (3 * Math.PI) / 4 + (Math.PI / 2) * corner;
+    const angle = Math.atan2(z - centre.z, x - centre.x);
+    // Bring the difference into -180°..180°.
+    const past = Math.atan2(Math.sin(angle - middle), Math.cos(angle - middle));
+    if (past >= 0) {
+      sideIndex = corner;
+      along = past * radius;
+    } else {
+      sideIndex = (corner + 3) % 4;
+      const from = CORNERS[sideIndex];
+      const straight = Math.hypot(centre.x - from.x, centre.z - from.z);
+      along = (Math.PI / 4) * radius + straight + (Math.PI / 4 + past) * radius;
+    }
+  } else {
+    // Beside a straight: west or east if it is further out sideways.
+    sideIndex = overX > overZ ? (x < 0 ? 0 : 2) : z < 0 ? 1 : 3;
+    const from = CORNERS[sideIndex];
+    const to = CORNERS[(sideIndex + 1) % 4];
+    const straight = Math.hypot(to.x - from.x, to.z - from.z);
+    const outward = (3 * Math.PI) / 4 + (Math.PI / 2) * sideIndex + Math.PI / 4;
+    radius = (x - from.x) * Math.cos(outward) + (z - from.z) * Math.sin(outward);
+    const t = ((x - from.x) * (to.x - from.x) + (z - from.z) * (to.z - from.z)) / straight ** 2;
+    along = (Math.PI / 4) * radius + t * straight;
+  }
+
+  const from = CORNERS[sideIndex];
+  const to = CORNERS[(sideIndex + 1) % 4];
+  const total = (Math.PI / 2) * radius + Math.hypot(to.x - from.x, to.z - from.z);
+  return {
+    position: SIDE_START[sideIndex] + (along / total) * SIDES[sideIndex].blocks,
+    depth: radius - FRONT_CORNER_RADIUS,
+  };
+}
+
+export interface SeatRefInBlock {
+  block: Block;
+  row: number;
+  seat: number;
+}
+
+/** How far outside a Level's Rows a point may be and still count as that Level. */
+const LEVEL_REACH = 2.5;
+
+/** The seat nearest to a ground point, or null if the point is not on a stand. */
+export function seatAtPoint(blocks: Block[], x: number, z: number): SeatRefInBlock | null {
+  const { position, depth } = locate(x, z);
+  if (position < 0 || position >= BLOCKS_PER_LEVEL) return null;
+
+  let best: { level: Level; miss: number } | null = null;
+  for (const level of Object.keys(LEVEL_PROFILE) as Level[]) {
+    const rows = blocks.find((b) => b.level === level)?.rowSeats.length ?? 0;
+    const { startDepth, tread } = LEVEL_PROFILE[level];
+    const miss = Math.max(startDepth - depth, depth - (startDepth + rows * tread), 0);
+    if (miss <= LEVEL_REACH && (!best || miss < best.miss)) best = { level, miss };
+  }
+  if (!best) return null;
+
+  const block = blocks.find(
+    (b) => b.level === best.level && b.position === Math.floor(position),
+  );
+  if (!block) return null;
+
+  const { startDepth, tread } = LEVEL_PROFILE[block.level];
+  const rows = block.rowSeats.length;
+  const row = Math.min(rows, Math.max(1, Math.floor((depth - startDepth) / tread) + 1));
+  const seats = block.rowSeats[row - 1];
+  const across = (position - block.position - AISLE_SHARE) / (1 - 2 * AISLE_SHARE);
+  const seat = Math.min(seats, Math.max(1, Math.floor(across * seats) + 1));
+  return { block, row, seat };
+}
+
+/**
+ * The seat a line of sight is really aimed at. A click lands on the concrete
+ * behind or below a seat, so this looks at the seats around the first guess
+ * and picks the one the line passes closest to.
+ */
+export function seatOnRay(
+  guess: SeatRefInBlock,
+  origin: [number, number, number],
+  direction: [number, number, number],
+): SeatRefInBlock {
+  const { block } = guess;
+  let best = guess;
+  let bestMiss = Infinity;
+  for (let row = guess.row - 2; row <= guess.row + 1; row++) {
+    if (row < 1 || row > block.rowSeats.length) continue;
+    // Rows differ in length, so carry the place across the Block, not the number.
+    const across = (guess.seat - 0.5) / block.rowSeats[guess.row - 1];
+    const middle = Math.floor(across * block.rowSeats[row - 1]) + 1;
+    for (let seat = middle - 1; seat <= middle + 1; seat++) {
+      if (seat < 1 || seat > block.rowSeats[row - 1]) continue;
+      const place = seatPlace(block, row, seat);
+      // Distance from the middle of the seat's backrest to the line.
+      const px = place.x - origin[0];
+      const py = place.y + 0.55 - origin[1];
+      const pz = place.z - origin[2];
+      const t = px * direction[0] + py * direction[1] + pz * direction[2];
+      const miss = Math.hypot(
+        px - direction[0] * t,
+        py - direction[1] * t,
+        pz - direction[2] * t,
+      );
+      if (miss < bestMiss) {
+        bestMiss = miss;
+        best = { block, row, seat };
+      }
+    }
+  }
+  return best;
+}

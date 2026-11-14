@@ -1,16 +1,9 @@
 import type { Tier } from "@/lib/domain/types";
-import { formatCount, formatMoney, TIER_NAME, TIER_ORDER } from "@/lib/format";
+import { formatCount, formatMoney, TIER_NAME, TIER_ORDER, TIER_SWATCH } from "@/lib/format";
 import { getOccupancy, getSeatMap } from "@/lib/queries";
 
 // The four Tiers with their price and seats left. The swatch is the colour
 // the Tier has on the seat map.
-
-const SWATCH: Record<Tier, string> = {
-  CLUB_PREMIUM: "bg-tier-premium",
-  CATEGORY_1: "bg-tier-1",
-  CATEGORY_2: "bg-tier-2",
-  CATEGORY_3: "bg-tier-3",
-};
 
 const WHERE: Record<Tier, string> = {
   CLUB_PREMIUM: "Club Level, along the sides",
@@ -41,7 +34,7 @@ export async function TierList({ matchId }: { matchId: number }) {
           key={tier}
           className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 gap-y-1 border-b border-night-700 py-4"
         >
-          <span className={`size-3 self-center ${SWATCH[tier]}`} aria-hidden />
+          <span className={`size-3 self-center ${TIER_SWATCH[tier]}`} aria-hidden />
           <span className="font-semibold">{TIER_NAME[tier]}</span>
           <span className="data text-lg">
             {formatMoney(price, seatMap.currency)}

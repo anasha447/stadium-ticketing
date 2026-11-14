@@ -50,8 +50,10 @@ interface Mark {
   bitmap: string[];
   /** Ring position of the middle of the mark. */
   centre: number;
-  /** The Rows it covers, front to back. */
+  /** The Rows it sits on, front to back. The mark is centred on them. */
   rows: RowSpan[];
+  /** How much of the height of those Rows the mark fills, 0 to 1. */
+  fill: number;
   /** Width in metres. Left out, it follows from the height and the bitmap's shape. */
   width?: number;
 }
@@ -62,18 +64,21 @@ const ALL_ROWS: RowSpan[] = [
   { level: "UPPER", from: 1, to: 28 },
 ];
 
+const UPPER_ROWS: RowSpan[] = [{ level: "UPPER", from: 1, to: 28 }];
+
 const MARKS: Mark[] = [
-  // The crest, in the middle of the west side, across all three Levels.
-  { bitmap: CREST, centre: 6, rows: ALL_ROWS },
-  // The Spotify symbol, behind the north goal, across all three Levels.
-  { bitmap: SPOTIFY, centre: 16, rows: ALL_ROWS },
-  // The words, along the east side of the upper Level. Set a little narrow
-  // so they fit between the corners.
+  // The crest, in the middle of the west side, centred across the three Levels.
+  { bitmap: CREST, centre: 6, rows: ALL_ROWS, fill: 0.75 },
+  // The Spotify symbol, behind the north goal, centred across the three Levels.
+  { bitmap: SPOTIFY, centre: 16, rows: ALL_ROWS, fill: 0.75 },
+  // The words, in the middle of the east side of the upper Level. Set a
+  // little narrow, as stadium lettering is.
   {
     bitmap: textBitmap("FC BARCELONA"),
     centre: 26,
-    rows: [{ level: "UPPER", from: 5, to: 25 }],
-    width: 176,
+    rows: UPPER_ROWS,
+    fill: 0.5625,
+    width: 132,
   },
 ];
 
@@ -86,21 +91,28 @@ interface PlacedMark {
 }
 
 function place(mark: Mark): PlacedMark {
+  // Measure up the slope, Row by Row, to find how tall the Rows are in all.
   const middles: [string, number][] = [];
-  let height = 0;
+  let slope = 0;
   for (const { level, from, to } of mark.rows) {
     const pitch = rowPitch(level);
     for (let row = from; row <= to; row++) {
-      middles.push([`${level}:${row}`, height + pitch / 2]);
-      height += pitch;
+      middles.push([`${level}:${row}`, slope + pitch / 2]);
+      slope += pitch;
     }
   }
+
+  // The mark takes a band in the middle of that slope, leaving the same
+  // number of metres clear in front of it and behind it.
+  const height = slope * mark.fill;
+  const bottom = (slope - height) / 2;
+  const up = new Map<string, number>();
+  for (const [key, at] of middles) {
+    if (at >= bottom && at < bottom + height) up.set(key, (at - bottom) / height);
+  }
+
   const shape = mark.bitmap[0].length / mark.bitmap.length;
-  return {
-    mark,
-    width: mark.width ?? height * shape,
-    up: new Map(middles.map(([key, at]) => [key, at / height])),
-  };
+  return { mark, width: mark.width ?? height * shape, up };
 }
 
 const PLACED = MARKS.map(place);

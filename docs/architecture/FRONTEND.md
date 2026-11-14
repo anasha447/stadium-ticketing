@@ -90,8 +90,11 @@ lib/stadium/geometry.ts   turns those numbers into meshes by sweeping a cross-se
 lib/stadium/seats.ts      one transform and one colour per seat, in Seat States order
 lib/stadium/mosaic.ts     the colour of each seat in stadium view: bands plus the three yellow marks
 lib/stadium/mark-bitmaps.ts  the crest and the Spotify symbol as bitmaps (made by scripts/make-marks.py)
+lib/stadium/view.ts       which view the Fan is in (stadium, Block, seat) and how to step between seats
+lib/stadium/camera.ts     where the camera stands in each view, and how long a flight takes
 lib/design/tokens.ts      the colours 3D code may use, checked against globals.css by a test
-components/stadium/       the React Three Fiber scene: bowl, pitch, canvas and controls
+components/stadium/       the React Three Fiber scene: bowl, pitch, seats, camera rig, and the
+                          StadiumExperience component that owns the view and the panel
 ```
 
 The Seat Map says how many Rows and seats a Block has; `layout.ts` says where they are.
@@ -99,6 +102,16 @@ Terraces, seats and camera all read the same module, so a seat can never float o
 step. All 60,560 seats are one instanced mesh, and seat number `i` in that mesh is
 character `i` of the Seat States strings read Block by Block, so recolouring a seat by
 its state is a lookup, not a search. The canvas is loaded only in the browser and only on the seats page.
+
+**Clicking a seat.** The 60,560 seats are left out of hit-testing. A click is tested
+against the concrete steps (three meshes), and `layout.ts` turns the point that was hit
+back into a Block, Row and seat, then checks the few seats around it against the line of
+sight to pick the one actually aimed at. That is a handful of sums per click, where
+testing every seat would be 60,000.
+
+**Seat States** for a Block are read in the browser when the Block is opened
+(`GET …/seat-states?blocks=214`), and that Block's seats change from the mosaic to their
+state colours.
 
 ## 5. Errors
 

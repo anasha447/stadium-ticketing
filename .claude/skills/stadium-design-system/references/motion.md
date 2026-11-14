@@ -26,8 +26,9 @@ Ordered by impact. Spend effort in this order.
   scaled by how far it flies. Nothing in the interface is slower than 420ms.
 - **Arrive with `ease-out`, travel with `ease-in-out`.** No bounce, no elastic: this
   is a ticket office, and money is involved.
-- **Camera flights are interruptible.** A click or drag during a flight takes over from
-  the current position. Never lock input while something plays.
+- **Camera flights are interruptible.** Choosing another place during a flight (a
+  click, an arrow key, Escape) sends the camera there from where it is. Dragging waits
+  until the camera lands, which is at most 1.8 seconds.
 - **Auto-rotation stops on first touch** and does not resume until the Fan asks (the
   "360 tour" button).
 - **Animate transform and opacity** in the DOM. In the scene, change instance colours
