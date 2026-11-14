@@ -31,7 +31,7 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 | Checkout | `/matches/[id]/checkout/[holdId]` | `POST /orders` with `Idempotency-Key` | browser | the key is created on the first Pay and kept with the method per Hold, so a retry or a reload repeats the same request |
 | | | `GET /orders/{orderId}` | browser | polled until CONFIRMED or FAILED |
 | | | `POST /orders/{orderId}/payment-attempts` | browser | retry with another method |
-| My Tickets | `/tickets` | `GET /me/tickets` | server | per-Fan, not cached |
+| My Tickets | `/tickets` | `GET /me/tickets` · `GET /matches` | browser | per-Fan, read in the browser; grouped by Match. On the mock, "Reset the demo" clears this browser's demo data |
 
 Later, off the F-track: Steward scanner (`POST /gate/scans`, Sprint 11), Admin occupancy
 heatmap (Sprint 12), Rotating Credential (`GET /tickets/{id}/credential`, Sprint 11).
@@ -192,6 +192,16 @@ change the method once a payment is on its way. The Order id is added to the pla
 reload goes straight back to the Order. `watchOrder` reads it once a second until it is
 CONFIRMED or FAILED. In the mock the code is shown on screen and labelled as a demo.
 `POST /orders/{id}/payment-attempts` is not used: the mock never declines.
+
+**Tickets.** Once the Order is confirmed the checkout shows its Tickets (`GET /me/tickets`,
+filtered by Order). A Ticket card has the Match, Block, Row, seat, Tier and price, and a
+square code made by `lib/tickets/pattern.ts` from the Ticket id: three corner squares
+and a fixed pattern. It only looks like a QR code and says so; entry will use the
+Rotating Credential, which is never printed. On the stadium page the seats the Fan has
+Tickets for are drawn in the "yours" colour with no fan on them, sitting in one says
+"You have a Ticket for this seat", and they count towards the four seats per Match:
+"Your seats" shows "4 of 4" with two bought and two chosen, and "pick seats together"
+only offers what still fits.
 
 ## 5. Errors
 

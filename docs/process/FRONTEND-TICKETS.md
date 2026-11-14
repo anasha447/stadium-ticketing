@@ -69,8 +69,8 @@ is looking, and a view score out of 100 with the distance to the pitch.
 |---|---|---|---|---|
 | TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ✅ | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
-| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | 🔎 | [#30](https://github.com/anasha447/stadium-ticketing/issues/30) | [#31](https://github.com/anasha447/stadium-ticketing/pull/31) |
-| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ⏸ after F303 | | |
+| TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ✅ | [#30](https://github.com/anasha447/stadium-ticketing/issues/30) | [#31](https://github.com/anasha447/stadium-ticketing/pull/31) |
+| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | 🔎 | [#32](https://github.com/anasha447/stadium-ticketing/issues/32) | |
 
 **TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
 button, sees how many are waiting and a countdown to the Draw, then gets a place and
@@ -94,6 +94,13 @@ screen, and checks it; a wrong code asks again. Then the Fan picks Apple Pay or 
 once per Hold and kept with the method, so a retry or a reload can never pay twice. The
 page then follows the Order until it is paid (reference and seats) or failed (the Hold
 ran out). The Hold's time left and total stay in view the whole time, first on a phone.
+
+**TKT-F304 — Tickets.** Once paid, the checkout shows the Order reference and one Ticket
+per seat: Match, Block, Row, seat, Tier, price, and a square code that only looks like a
+QR code and says it cannot be scanned. My Tickets lists every Ticket by Match, with a
+link to see the seats in the stadium and, on the mock, "Reset the demo". In the
+stadium, bought seats are the Fan's own colour with no fan on them, and they count
+towards the four seats per Match.
 
 ## Sprint F4 — Atmosphere and polish
 
@@ -145,7 +152,7 @@ should pick it up.
 | "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F404 |
 | The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | F404 |
 | "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F404 |
-| After paying, the checkout lists the seats but there are no Tickets to show: My Tickets is still the empty page | F303 | F304 |
+| Bought seats in the "yours" colour were not seen on screen (the canvas in the preview pane is too small to tell); the drawer's count and the seat-view line were | F304 | F404 |
 | A declined payment and the retry with another method (`payment-attempts`) are in neither the mock nor the UI | F303 | when the gateway exists |
 | The Order's "paid" and "failed" states were seen; "failed" was only tested in code (Hold running out mid-payment) | F303 | F404 |
 | The amber pulse and the "Another Fan has just taken this seat" line in seat view were not seen on screen at full speed; the taken-seat notice was | F402 | F404 |
