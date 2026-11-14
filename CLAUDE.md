@@ -147,6 +147,7 @@ docs/learning/             LEARNING-NOTES (Anas), lessons/, records/, RESOURCES 
 | which screen calls which endpoint, mock layer | `docs/architecture/FRONTEND.md` |
 | the 3D stadium and booking experience | `.claude/skills/animation.md` |
 | frontend choices the backend must absorb | `docs/process/FRONTEND-DEVIATIONS.md` |
+| frontend tickets: what each delivered, status, what is carried forward | `docs/process/FRONTEND-TICKETS.md` |
 | the ticket loop, tests, git, review, skills | `docs/process/HOW-WE-WORK.md` |
 | tickets of a sprint, roadmap, stretch | `docs/process/sprints/`, `docs/process/ROADMAP.md` |
 | why something was decided | `docs/adr/` |
