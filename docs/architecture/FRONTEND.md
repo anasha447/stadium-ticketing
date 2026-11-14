@@ -28,7 +28,7 @@ it never computes a price, never decides a Seat State, never extends a Hold.
 | Hold | drawer on the stadium | `POST /matches/{id}/holds` | browser | 201 → Hold + Quote; 409 → the taken seats are named and dropped, the rest stay chosen |
 | | | `GET` / `DELETE /matches/{id}/holds/{holdId}` | browser | countdown runs from `expiresAt`, never from a local timer start; the Hold id is kept in `sessionStorage` so a reload finds the Hold again |
 | Sign-in | step inside checkout | `POST /auth/otp/request` · `POST /auth/otp/verify` | route handler | fake code, printed to the backend console |
-| Checkout | `/matches/[id]/checkout/[holdId]` | `POST /orders` with `Idempotency-Key` | browser | the key is created once per Hold and reused on retry |
+| Checkout | `/matches/[id]/checkout/[holdId]` | `POST /orders` with `Idempotency-Key` | browser | the key is created on the first Pay and kept with the method per Hold, so a retry or a reload repeats the same request |
 | | | `GET /orders/{orderId}` | browser | polled until CONFIRMED or FAILED |
 | | | `POST /orders/{orderId}/payment-attempts` | browser | retry with another method |
 | My Tickets | `/tickets` | `GET /me/tickets` | server | per-Fan, not cached |
@@ -181,6 +181,17 @@ seconds. Before the Hold the drawer shows each seat's base price; after it, ever
 number is read from the Quote. Picking seats together is a suggestion made in the
 browser, and the Hold is still made with the exact seat ids, so the backend's
 `mode=ADJACENT` is not used yet.
+
+**Checkout.** One page per Hold, in the backend's order: confirm a mobile number with
+the one-time code, choose Apple Pay or card, pay, then watch the Order. The Hold's
+Quote and countdown stay in view (first on a phone). On the first press of Pay,
+`lib/booking/checkout.ts` makes a payment plan, a new `Idempotency-Key` and the chosen
+method, and keeps it in `sessionStorage` by Hold id; every retry, and every press after
+a reload, sends exactly that request, so the Fan can never pay twice and can no longer
+change the method once a payment is on its way. The Order id is added to the plan, so a
+reload goes straight back to the Order. `watchOrder` reads it once a second until it is
+CONFIRMED or FAILED. In the mock the code is shown on screen and labelled as a demo.
+`POST /orders/{id}/payment-attempts` is not used: the mock never declines.
 
 ## 5. Errors
 
