@@ -34,11 +34,11 @@ second one becomes a ghost button. Text on orange is `signal-ink`.
 | Mode | When | Seat colours |
 |---|---|---|
 | **Mosaic** | Stadium view | `seat-blau`, `seat-grana`, and `seat-or` for the marks (Spotify symbol, crest, "FC BARCELONA"). Realistic: this is what the stadium looks like |
-| **State** | Block view and Seat view | available = its Tier colour · held = `state-held`, pulses once when someone takes it · sold = `state-sold` with a seated fan · yours = `state-mine` outline |
+| **State** | Block view and Seat view | available = its Tier colour · held = `state-held`, drawn smaller, and pulses once when someone takes it · sold = `state-sold` with a seated fan · yours = `state-mine` outline |
 
 The four Tier colours (`tier-premium`, `tier-1`, `tier-2`, `tier-3`) were chosen to stay
 apart from amber and from each other for colour-blind Fans, and they also colour the
-legend. A state is never carried by colour alone: held pulses, sold has a figure, yours
+legend. A state is never carried by colour alone: held is drawn smaller, sold has a figure, yours
 has an outline, and the hover card says the state in words.
 
 **4. The scene.** The `scene-*` tokens are what the stadium is built from in 3D: concrete,

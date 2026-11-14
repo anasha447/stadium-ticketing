@@ -45,7 +45,7 @@ With `prefers-reduced-motion: reduce`:
   `duration-base` (run with the Web Animations API, which the CSS reduced-motion rule
   leaves alone),
 - auto-rotation and the live match are off by default (a button turns them on),
-- pulses become a static outline,
+- the pulse is dropped; a held seat still reads as held because it is drawn smaller,
 - the Draw shows the final order without the shuffle.
 
 The experience must be complete this way, not degraded: every state still reads.
