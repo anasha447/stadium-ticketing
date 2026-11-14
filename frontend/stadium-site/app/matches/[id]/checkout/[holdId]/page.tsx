@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CheckoutHolding } from "@/components/checkout/checkout-holding";
+import { Checkout as CheckoutScreen } from "@/components/checkout/checkout";
 
 type Props = PageProps<"/matches/[id]/checkout/[holdId]">;
 
@@ -21,5 +21,5 @@ async function Checkout({ params }: { params: Props["params"] }) {
   const { id, holdId } = await params;
   const matchId = Number(id);
   if (!Number.isInteger(matchId)) notFound();
-  return <CheckoutHolding matchId={matchId} holdId={holdId} />;
+  return <CheckoutScreen matchId={matchId} holdId={holdId} />;
 }
