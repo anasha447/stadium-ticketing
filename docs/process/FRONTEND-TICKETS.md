@@ -63,7 +63,7 @@ is looking, and a view score out of 100 with the distance to the pitch.
 
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
-| TKT-F301 | Waiting Room screen with the Draw animation | 🔎 | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | |
+| TKT-F301 | Waiting Room screen with the Draw animation | 🔎 | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ☐ | | |
 | TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ☐ | | |
 | TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ☐ | | |
