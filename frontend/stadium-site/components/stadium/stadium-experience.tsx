@@ -17,6 +17,7 @@ import {
   type ChosenSeat,
   isChosen,
   isFull,
+  MAX_SEATS,
   removeSeat,
   removeSeatIds,
   seatIdOf,
@@ -177,6 +178,8 @@ export function StadiumExperience({
   const now = useNow();
   /** Seats chosen but not held yet. */
   const [chosen, setChosen] = useState<ChosenSeat[]>([]);
+  /** Seats the Fan already has Tickets for at this Match. */
+  const [owned, setOwned] = useState<ChosenSeat[]>([]);
   const [hold, setHold] = useState<Hold | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -207,6 +210,25 @@ export function StadiumExperience({
     },
     [matchId, blockById],
   );
+
+  // Seats bought earlier show as the Fan's own and count towards the limit of four.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listMyTickets()
+      .then((tickets) => {
+        if (cancelled) return;
+        setOwned(
+          tickets
+            .filter((ticket) => ticket.matchId === matchId)
+            .flatMap((ticket) => parseSeatId(ticket.seatId) ?? []),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
 
   // A Hold outlives a reload: read it back if this tab made one.
   useEffect(() => {
@@ -296,8 +318,21 @@ export function StadiumExperience({
     [blockId, blockStates],
   );
 
-  /** The Fan's own seats: the ones in their Hold, or the ones chosen so far. */
-  const mine = useMemo(() => (hold ? seatsOf(hold) : chosen), [hold, chosen]);
+  /** The seats being booked now: the ones in the Hold, or the ones chosen so far. */
+  const picking = useMemo(() => (hold ? seatsOf(hold) : chosen), [hold, chosen]);
+  /** Every seat shown as the Fan's own: being booked, or already bought. */
+  const mine = useMemo(() => [...picking, ...owned], [picking, owned]);
+  /** How many more seats the Fan could add to a Hold, counting what they own. */
+  const room = MAX_SEATS - owned.length;
+
+  // A bought seat is drawn in the Fan's own colour, so no fan sits on it.
+  const fanStates = useMemo(
+    () =>
+      owned.length === 0
+        ? states
+        : applyDeltas(states, [{ state: "A", seatIds: owned.map(seatIdOf) }], blockById),
+    [states, owned, blockById],
+  );
 
   /** The seat a pointer on the stands is aimed at. */
   const aimedAt = useCallback(
@@ -398,7 +433,7 @@ export function StadiumExperience({
 
   const addCurrent = () => {
     if (!current) return;
-    setChosen((list) => addSeat(list, current));
+    setChosen((list) => addSeat(list, current, owned.length));
     setNotice(null);
   };
 
@@ -469,6 +504,8 @@ export function StadiumExperience({
   };
 
   const seated = view.kind === "seat" && block ? seatView(block, view.row, view.seat) : null;
+  /** True when the Fan already has a Ticket for the seat they are sitting in. */
+  const currentOwned = current !== null && isChosen(owned, current);
   /** True when someone else took the seat the Fan is sitting in to look. */
   const currentTaken =
     current !== null &&
@@ -490,7 +527,7 @@ export function StadiumExperience({
           blocks={blocks}
           view={view}
           open={open}
-          sold={states}
+          sold={fanStates}
           litBlockId={litBlockId}
           shownTier={shownTier}
           mine={mine}
@@ -593,10 +630,10 @@ export function StadiumExperience({
                   )}
                 </p>
                 <StateKey tierSwatch={TIER_SWATCH[block.tier]} />
-                {blockStates && !hold && (
+                {blockStates && !hold && room >= 2 && (
                   <div className="flex items-center gap-2 text-sm text-flood-300">
                     <span className="flex-1">Pick seats together</span>
-                    {[2, 3, 4].map((count) => (
+                    {[2, 3, 4].filter((count) => count <= room).map((count) => (
                       <button
                         key={count}
                         type="button"
@@ -642,9 +679,12 @@ export function StadiumExperience({
                     </dd>
                   </div>
                 </dl>
-                {current && hold && (
+                {currentOwned && (
+                  <p className="text-sm text-flood-300">You have a Ticket for this seat.</p>
+                )}
+                {current && hold && !currentOwned && (
                   <p className="text-sm text-flood-300">
-                    {isChosen(mine, current)
+                    {isChosen(picking, current)
                       ? "This seat is held for you."
                       : "Your seats are held. Release them to choose different ones."}
                   </p>
@@ -664,20 +704,22 @@ export function StadiumExperience({
                     to the nearest available ones.
                   </p>
                 )}
-                {current && !hold && !currentTaken && !isChosen(chosen, current) && (
+                {current && !hold && !currentTaken && !currentOwned && !isChosen(chosen, current) && (
                   <>
                     <button
                       type="button"
                       // Orange until something is chosen; after that "Hold seats" is the next step.
                       className={chosen.length === 0 ? ACTION : STRONG}
-                      disabled={isFull(chosen)}
+                      disabled={isFull(chosen, owned.length)}
                       onClick={addCurrent}
                     >
                       Add seat
                     </button>
-                    {isFull(chosen) && (
+                    {isFull(chosen, owned.length) && (
                       <p className="text-xs text-flood-500">
-                        You have four seats, the most for one Match.
+                        {owned.length > 0
+                          ? `With your ${owned.length === 1 ? "Ticket" : `${owned.length} Tickets`} that makes four seats, the most for one Match.`
+                          : "You have four seats, the most for one Match."}
                       </p>
                     )}
                   </>
@@ -713,20 +755,21 @@ export function StadiumExperience({
           </>
         )}
 
-        {mine.length > 0 && (
+        {picking.length > 0 && (
           <button
             type="button"
             className={`${QUIET_BUTTON} sm:hidden`}
             onClick={() => setDrawerOpen(true)}
           >
-            Your seats ({mine.length})
+            Your seats ({picking.length})
           </button>
         )}
       </section>
 
-      {(mine.length > 0 || notice) && (
+      {(picking.length > 0 || notice) && (
         <YourSeats
           blocks={blocks}
+          owned={owned.length}
           currency={currency}
           chosen={chosen}
           hold={hold}

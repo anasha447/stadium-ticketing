@@ -14,9 +14,18 @@ import {
 } from "@/lib/booking/checkout";
 import { countdown, type CountdownTone } from "@/lib/booking/countdown";
 import { parseSeatId } from "@/lib/domain/seat-id";
-import type { Hold, Order, OtpChallenge, PaymentMethod, Session } from "@/lib/domain/types";
+import type {
+  Hold,
+  Match,
+  Order,
+  OtpChallenge,
+  PaymentMethod,
+  Session,
+  Ticket,
+} from "@/lib/domain/types";
 import { formatMoney, TIER_NAME } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
+import { TicketCard } from "@/components/tickets/ticket-card";
 
 // The checkout for one Hold. It follows the backend's order: prove a mobile
 // number with a one-time code, choose how to pay, then wait for the Order to
@@ -457,23 +466,75 @@ function OrderStatus({ order, matchId }: { order: Order; matchId: number }) {
     );
   }
 
+  return <Confirmation order={order} matchId={matchId} amount={amount} reference={reference} />;
+}
+
+/** The Order is paid: its reference and one Ticket per seat. */
+function Confirmation({
+  order,
+  matchId,
+  amount,
+  reference,
+}: {
+  order: Order;
+  matchId: number;
+  amount: string;
+  reference: React.ReactNode;
+}) {
+  const [tickets, setTickets] = useState<Ticket[] | null>(null);
+  const [match, setMatch] = useState<Match | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listMyTickets()
+      .then((all) => !cancelled && setTickets(all.filter((t) => t.orderId === order.orderId)))
+      .catch(() => !cancelled && setTickets([]));
+    api
+      .getMatch(matchId)
+      .then((found) => !cancelled && setMatch(found))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [order.orderId, matchId]);
+
   return (
     <Page>
-      <section className={`${PANEL} max-w-xl`} aria-live="polite">
-        {reference}
-        <p className="text-xl font-semibold">
-          Paid <span className="data">{amount}</span>. These seats are yours:
-        </p>
-        <ul className="flex flex-col divide-y divide-night-700 border-y border-night-700">
-          {order.seatIds.map((seatId) => (
-            <li key={seatId} className="py-2 text-sm">
-              {seatWords(seatId)}
-            </li>
-          ))}
-        </ul>
-        <div>
-          <Link href={`/matches/${matchId}`} className={ACTION}>
-            Back to the Match
+      <section className="flex max-w-3xl flex-col gap-6" aria-live="polite">
+        <div className="flex flex-col gap-1">
+          {reference}
+          <p className="text-xl font-semibold">
+            Paid <span className="data">{amount}</span>.{" "}
+            {order.seatIds.length === 1 ? "Here is your Ticket." : `Here are your ${order.seatIds.length} Tickets.`}
+          </p>
+        </div>
+        {tickets === null ? (
+          <p className="text-flood-300" role="status">
+            Finding your Tickets
+          </p>
+        ) : tickets.length === 0 ? (
+          // Paid, but the Tickets are not readable yet: name the seats instead.
+          <ul className="flex flex-col gap-1 text-sm">
+            {order.seatIds.map((seatId) => (
+              <li key={seatId}>{seatWords(seatId)}</li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {[...tickets]
+              .sort((a, b) => a.seatId.localeCompare(b.seatId))
+              .map((ticket) => (
+                <TicketCard key={ticket.ticketId} ticket={ticket} match={match} />
+              ))}
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-6">
+          <Link href="/tickets" className={ACTION}>
+            See all your Tickets
+          </Link>
+          <Link href={`/matches/${matchId}/seats`} className={SMALL}>
+            See your seats in the stadium
           </Link>
         </div>
       </section>

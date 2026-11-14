@@ -29,6 +29,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 
 export function YourSeats({
   blocks,
+  owned,
   currency,
   chosen,
   hold,
@@ -45,6 +46,8 @@ export function YourSeats({
   onStartAgain,
 }: {
   blocks: Block[];
+  /** Seats the Fan already has Tickets for at this Match; they count towards the four. */
+  owned: number;
   currency: Currency;
   chosen: ChosenSeat[];
   hold: Hold | null;
@@ -78,12 +81,18 @@ export function YourSeats({
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="display text-2xl">Your seats</h2>
         <p className="data text-sm text-flood-300">
-          {hold ? hold.seatIds.length : chosen.length} of {MAX_SEATS}
+          {owned + (hold ? hold.seatIds.length : chosen.length)} of {MAX_SEATS}
         </p>
         <button type="button" className={`${SMALL} sm:hidden`} onClick={onClose}>
           Close
         </button>
       </div>
+
+      {owned > 0 && (
+        <p className="text-sm text-flood-300">
+          You already have {owned === 1 ? "a Ticket" : `${owned} Tickets`} for this Match.
+        </p>
+      )}
 
       {notice && (
         <p role="alert" className="rounded-control border border-warn px-3 py-2 text-sm">
