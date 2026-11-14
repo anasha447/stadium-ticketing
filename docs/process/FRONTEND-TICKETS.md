@@ -37,7 +37,7 @@ Tickets page. Pages are prebuilt; seats left is refreshed every 10 seconds.
 | TKT-F201 | The stadium bowl in 3D | ✅ | [#12](https://github.com/anasha447/stadium-ticketing/issues/12) | [#13](https://github.com/anasha447/stadium-ticketing/pull/13) |
 | TKT-F202 | 60K seats and the yellow mosaic | ✅ | [#14](https://github.com/anasha447/stadium-ticketing/issues/14) | [#15](https://github.com/anasha447/stadium-ticketing/pull/15) |
 | TKT-F203 | Stadium, Block and seat views with camera flights | ✅ | [#16](https://github.com/anasha447/stadium-ticketing/issues/16) | [#17](https://github.com/anasha447/stadium-ticketing/pull/17) |
-| TKT-F204 | Mini-map, breadcrumbs, Tier legend and hover cards | 🔎 | [#18](https://github.com/anasha447/stadium-ticketing/issues/18) | [#19](https://github.com/anasha447/stadium-ticketing/pull/19) |
+| TKT-F204 | Mini-map, breadcrumbs, Tier legend and hover cards | ✅ | [#18](https://github.com/anasha447/stadium-ticketing/issues/18) | [#19](https://github.com/anasha447/stadium-ticketing/pull/19) |
 
 **TKT-F201 — The bowl.** Three stepped Levels on a rounded-rectangle plan, the outer wall
 with balcony rings, a roof ring, a striped pitch with markings and goals. Drag to spin,
@@ -63,10 +63,17 @@ is looking, and a view score out of 100 with the distance to the pitch.
 
 | Ticket | Title | Status | Issue | PR |
 |---|---|---|---|---|
-| TKT-F301 | Waiting Room screen with the Draw animation | ☐ | | |
+| TKT-F301 | Waiting Room screen with the Draw animation | 🔎 | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ☐ | | |
 | TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ☐ | | |
 | TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ☐ | | |
+
+**TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
+button, sees how many are waiting and a countdown to the Draw, then gets a place and
+watches it count down at 200 Fans a second until they are admitted. The picture shows
+the crowd as dots: at the Draw every dot moves at once into a queue, and the front of the
+queue goes in through the top. Admission lasts 30 minutes; the stadium page sends anyone
+without it back here, and the mock refuses a Hold without it.
 
 ## Sprint F4 — Atmosphere and polish
 
@@ -93,6 +100,8 @@ should pick it up.
 | The full `impeccable` and `ui-taste` reviews were skipped from F202 on | F202–F204 | F404 |
 | The roof is a short, see-through ring; the plan is a rounded rectangle, not the real oval | F201 | F401, if wanted |
 | The view score is a home-made formula | F204 | backend, if it ever supplies one |
+| The Draw animation has only been seen at 1 frame per second (the preview pane throttles it) | F301 | F404 |
+| The demo crowd is 3,600 Fans so the longest wait is 18 seconds; the Registration Window before booking opens is not shown | F301 | F402, or the backend tickets |
 
 ## Backend work this track has created
 

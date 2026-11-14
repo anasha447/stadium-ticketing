@@ -8,6 +8,7 @@ export const PROBLEM = {
   purchaseLimit: "/problems/purchase-limit",
   invalidHold: "/problems/invalid-hold",
   bookingNotOpen: "/problems/booking-not-open",
+  notAdmitted: "/problems/not-admitted",
   notFound: "/problems/not-found",
   notSignedIn: "/problems/not-signed-in",
   otpInvalid: "/problems/otp-invalid",

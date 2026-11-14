@@ -49,6 +49,15 @@ export const httpApi: StadiumApi = {
   listMatches: () => request("GET", "/matches"),
   getMatch: (matchId) => request("GET", `/matches/${matchId}`),
 
+  joinWaitingRoom: (matchId) => request("POST", `/waiting-room/${matchId}/register`),
+  getWaitingRoom: (matchId) => request("GET", `/waiting-room/${matchId}/status`),
+  watchWaitingRoom: (matchId, onStatus) => {
+    // The gateway pushes the position as server-sent events.
+    const events = new EventSource(`${baseUrl()}/waiting-room/${matchId}/position`);
+    events.onmessage = (event) => onStatus(JSON.parse(event.data));
+    return () => events.close();
+  },
+
   getSeatMap: (matchId) => request("GET", `/matches/${matchId}/seatmap`),
   getOccupancy: (matchId) => request("GET", `/matches/${matchId}/occupancy`),
   getSeatStates: (matchId, blockIds) => {

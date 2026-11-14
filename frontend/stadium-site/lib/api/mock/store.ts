@@ -17,6 +17,8 @@ export interface MockState {
   holds: Record<string, Hold>;
   orders: Record<string, StoredOrder>;
   tickets: Ticket[];
+  /** The Fan's place in each Match's Waiting Room, by Match id. */
+  waitingRoom?: Record<number, { drawAt: number; drawnPosition: number }>;
   /** Idempotency-Key → the request it was used for and the Order it made. */
   idempotency: Record<string, { fingerprint: string; orderId: string }>;
 }
