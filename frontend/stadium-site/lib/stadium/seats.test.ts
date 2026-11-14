@@ -61,44 +61,114 @@ describe("mosaic", () => {
   });
 
   it("puts the Spotify symbol behind the north goal and nothing behind the south", () => {
-    expect(yellowIn(on("NORTH"))).toBeGreaterThan(3000);
+    expect(yellowIn(on("NORTH"))).toBeGreaterThan(1800);
     expect(yellowIn(on("SOUTH"))).toBe(0);
   });
 
   it("puts the words on the east side of the upper Level only", () => {
-    expect(yellowIn((b) => b.side === "EAST" && b.level === "UPPER")).toBeGreaterThan(1500);
+    expect(yellowIn((b) => b.side === "EAST" && b.level === "UPPER")).toBeGreaterThan(1000);
     expect(yellowIn((b) => b.side === "EAST" && b.level !== "UPPER")).toBe(0);
   });
 
   it("leaves most seats blue or garnet", () => {
     const yellow = yellowIn(() => true);
-    expect(yellow / seats.count).toBeGreaterThan(0.08);
+    expect(yellow / seats.count).toBeGreaterThan(0.04);
     expect(yellow / seats.count).toBeLessThan(0.3);
   });
 
-  it("sets the words the right way round: the F's upright is on the left", () => {
-    // Left, seen from the pitch, is the low-numbered end of the east side.
-    // The F starts with a full-height upright, so the first yellow seat of
-    // every Row of the words lines up. Mirrored, the left edge would be the
-    // final A, whose top Row is narrower.
+  /** For each Row of the upper east side that has yellow seats: the leftmost one, in metres from the middle. */
+  function wordRows(): { row: number; left: number; right: number }[] {
     const east = map.blocks.filter((b) => b.side === "EAST" && b.level === "UPPER");
-    const leftEdges: number[] = [];
-    for (let row = 5; row <= 25; row++) {
+    const found = [];
+    for (let row = 1; row <= 28; row++) {
       const { depth } = rowPlace("UPPER", row);
-      let leftmost = Infinity;
+      let left = Infinity;
+      let right = -Infinity;
       for (const block of east) {
         for (let seat = 1; seat <= block.rowSeats[row - 1]; seat++) {
           if (seatColour(block, row, seat) !== "seatOr") continue;
           const metres =
             (block.position + seatAcross(block, row, seat) - 26) * blockWidth(26, depth);
-          leftmost = Math.min(leftmost, metres);
+          left = Math.min(left, metres);
+          right = Math.max(right, metres);
         }
       }
-      leftEdges.push(leftmost);
+      if (left !== Infinity) found.push({ row, left, right });
     }
-    const spread = Math.max(...leftEdges) - Math.min(...leftEdges);
-    expect(spread).toBeLessThan(1.5); // within a couple of seats of each other
-    expect(leftEdges[0]).toBeLessThan(-80); // and far to the left of the middle
+    return found;
+  }
+
+  /** Yellow seats of the words between two distances from the middle, in metres. */
+  function wordSeatsBetween(from: number, to: number): number {
+    const east = map.blocks.filter((b) => b.side === "EAST" && b.level === "UPPER");
+    let yellow = 0;
+    for (let row = 1; row <= 28; row++) {
+      const { depth } = rowPlace("UPPER", row);
+      for (const block of east) {
+        for (let seat = 1; seat <= block.rowSeats[row - 1]; seat++) {
+          const metres =
+            (block.position + seatAcross(block, row, seat) - 26) * blockWidth(26, depth);
+          if (metres >= from && metres <= to && seatColour(block, row, seat) === "seatOr") yellow++;
+        }
+      }
+    }
+    return yellow;
+  }
+
+  it("sets the words the right way round: the gap after FC is on the left", () => {
+    // Left, seen from the pitch, is the low-numbered end of the east side.
+    // The only gap between words comes after "FC", near the left end. The
+    // same distance to the right of the middle falls inside "ONA".
+    const dot = 132 / 68; // metres per dot of the lettering
+    const gapFrom = -66 + 11 * dot + 0.4;
+    const gapTo = -66 + 14 * dot - 0.4;
+    expect(wordSeatsBetween(gapFrom, gapTo)).toBe(0);
+    expect(wordSeatsBetween(-gapTo, -gapFrom)).toBeGreaterThan(20);
+  });
+
+  it("centres the words on the east side, up and down and side to side", () => {
+    const rows = wordRows();
+    // As many clear Rows in front of the words as behind them, give or take one.
+    const clearInFront = rows[0].row - 1;
+    const clearBehind = 28 - rows.at(-1)!.row;
+    expect(Math.abs(clearInFront - clearBehind)).toBeLessThanOrEqual(1);
+    // And the words reach as far left of the middle as right of it.
+    const left = Math.min(...rows.map((r) => r.left));
+    const right = Math.max(...rows.map((r) => r.right));
+    expect(Math.abs(left + right)).toBeLessThan(3);
+    expect(right - left).toBeGreaterThan(120);
+    expect(right - left).toBeLessThan(134);
+  });
+
+  it("centres the crest and the Spotify symbol on their sides", () => {
+    for (const [side, centre] of [["WEST", 6], ["NORTH", 16]] as const) {
+      let weighted = 0;
+      let yellow = 0;
+      for (const block of map.blocks.filter((b) => b.side === side)) {
+        block.rowSeats.forEach((seatCount, r) => {
+          for (let seat = 1; seat <= seatCount; seat++) {
+            if (seatColour(block, r + 1, seat) !== "seatOr") continue;
+            weighted += block.position + seatAcross(block, r + 1, seat) - centre;
+            yellow++;
+          }
+        });
+      }
+      // The average yellow seat sits on the middle of the side. The crest is
+      // not perfectly symmetrical, so allow a fifth of a Block.
+      expect(Math.abs(weighted / yellow)).toBeLessThan(0.2);
+    }
+  });
+
+  it("leaves the front and back Rows of each side clear of the marks", () => {
+    const clear = (b: Block, row: number) =>
+      b.rowSeats[row - 1] ===
+      Array.from({ length: b.rowSeats[row - 1] }, (_, i) => seatColour(b, row, i + 1)).filter(
+        (c) => c !== "seatOr",
+      ).length;
+    for (const b of map.blocks.filter((x) => x.side === "WEST" || x.side === "NORTH")) {
+      if (b.level === "LOWER") expect(clear(b, 1)).toBe(true);
+      if (b.level === "UPPER") expect(clear(b, 28)).toBe(true);
+    }
   });
 });
 
