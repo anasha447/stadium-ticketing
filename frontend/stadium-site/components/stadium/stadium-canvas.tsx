@@ -16,6 +16,7 @@ import { MatchPlay } from "./match-play";
 import { Floodlights, Sky } from "./night";
 import { Pitch } from "./pitch";
 import { type OpenBlock, Seats } from "./seats";
+import { Surroundings } from "./surroundings";
 
 // The 3D scene. It draws what it is told: which view the camera should be
 // in and which Block is open. Deciding those is StadiumExperience's job.
@@ -114,13 +115,16 @@ export default function StadiumCanvas({
         reducedMotion={reducedMotion}
       />
 
-      {/* The ground outside the stadium. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-        <circleGeometry args={[900, 64]} />
-        <meshStandardMaterial color={COLOR.night900} roughness={1} />
-      </mesh>
+      {/* Outside the wall: the plaza, the road, the fans arriving, the city. */}
+      <Surroundings playing={matchPlaying} />
 
-      <CameraRig view={view} blocks={blocks} reducedMotion={reducedMotion} heading={heading} />
+      <CameraRig
+        view={view}
+        blocks={blocks}
+        rows={rows}
+        reducedMotion={reducedMotion}
+        heading={heading}
+      />
     </Canvas>
   );
 }

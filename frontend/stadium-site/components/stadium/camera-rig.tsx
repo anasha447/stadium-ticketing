@@ -12,14 +12,32 @@ import {
   LOOK_DISTANCE,
   type Pose,
   seatPose,
+  stadiumFitDistance,
   stadiumPose,
 } from "@/lib/stadium/camera";
+import {
+  type Clearance,
+  flightLift,
+  flightPoint,
+  holdClear,
+  type Rows,
+  STADIUM_COME_IN,
+  STADIUM_LOWEST_TILT,
+  STADIUM_MIN_DISTANCE,
+  stadiumMaxDistance,
+} from "@/lib/stadium/camera-bounds";
 import type { View } from "@/lib/stadium/view";
 
 // Moves the camera between the three views. A flight carries the camera's
 // place, the point it looks at and its field of view along one eased curve.
 // Between flights the Fan drives: spinning the stadium, circling a Block,
 // or turning their head in a seat.
+//
+// The camera stays on the stadium. It cannot be panned, it zooms only as far
+// as the stadium still fills the view, and the stadium is solid to it: every
+// frame its place is checked against lib/stadium/camera-bounds, and a camera
+// that would be under the ground or inside a wall, the roof or a terrace is
+// held at the last clear point on its line of sight.
 
 type Controls = ComponentRef<typeof OrbitControls>;
 
@@ -28,6 +46,8 @@ interface Flight {
   fromLook: Vector3;
   fromFov: number;
   to: Pose;
+  /** How high the flight arcs in the middle, to go over the roof and not through it. */
+  lift: number;
   seconds: number;
   elapsed: number;
   landing: View["kind"];
@@ -48,15 +68,27 @@ function writeHeading(heading: { current: Heading }, camera: PerspectiveCamera) 
   heading.current = { x: facing.x, z: facing.z };
 }
 
-/** What the Fan may do with the camera once it has landed. */
-function handOver(controls: Controls, kind: View["kind"]) {
+/**
+ * How close the camera may come to a surface. Over the whole stadium it
+ * keeps well clear; in a Block it comes close enough to pick a seat, and
+ * stays inside the bowl.
+ */
+const CLEARANCE: Record<"stadium" | "block", Clearance> = {
+  stadium: { margin: 4, comeIn: STADIUM_COME_IN },
+  block: { margin: 1.5, inside: true },
+};
+
+/** What the Fan may do with the camera once it has landed. `aspect` is the screen's width over its height. */
+function handOver(controls: Controls, kind: View["kind"], aspect: number) {
   controls.enabled = true;
   if (kind === "stadium") {
-    controls.minDistance = 70;
-    controls.maxDistance = 1000;
+    // From inside the bowl out to where the stadium still fills the view.
+    // Any further and the Fan would be looking at the streets.
+    controls.minDistance = STADIUM_MIN_DISTANCE;
+    controls.maxDistance = stadiumMaxDistance(stadiumFitDistance(aspect));
     controls.minPolarAngle = 0;
     // Stay above the ground, and never look up from below it.
-    controls.maxPolarAngle = Math.PI / 2 - 0.08;
+    controls.maxPolarAngle = Math.PI / 2 - STADIUM_LOWEST_TILT;
     controls.rotateSpeed = 1;
     controls.enableZoom = true;
   } else if (kind === "block") {
@@ -96,11 +128,14 @@ export interface Heading {
 export function CameraRig({
   view,
   blocks,
+  rows,
   reducedMotion,
   heading,
 }: {
   view: View;
   blocks: Block[];
+  /** Rows per Level: the shape of the terraces the camera must stay out of. */
+  rows: Rows;
   reducedMotion: boolean;
   heading: { current: Heading };
 }) {
@@ -109,6 +144,8 @@ export function CameraRig({
   const flight = useRef<Flight | null>(null);
   const look = useRef(new Vector3());
   const touched = useRef(false);
+  /** The last place the camera was in clear air. It goes back there if it has nowhere else to go. */
+  const clearAt = useRef(new Vector3());
   /** Where the Fan had the camera when they left the stadium view. */
   const leftStadiumAt = useRef<Pose | null>(null);
   const lastKind = useRef<View["kind"] | null>(null);
@@ -143,8 +180,9 @@ export function CameraRig({
         orbit.target.copy(look.current);
       }
       camera.lookAt(look.current);
-      handOver(orbit, view.kind);
+      handOver(orbit, view.kind, size.width / size.height);
       orbit.update();
+      clearAt.current.copy(camera.position);
       flight.current = null;
     };
 
@@ -179,13 +217,22 @@ export function CameraRig({
       fromLook,
       fromFov: camera.fov,
       to,
+      lift: flightLift(rows, camera.position.toArray(), to.position),
       seconds: flightSeconds(camera.position.toArray(), to.position),
       elapsed: 0,
       landing: view.kind,
     };
     // `land` is reused when the flight ends.
     landRef.current = land;
-  }, [view, blocks, reducedMotion, get]);
+  }, [view, blocks, rows, reducedMotion, get]);
+
+  // A window that changes shape changes how far back the stadium view may pull.
+  const aspect = useThree((state) => state.size.width / state.size.height);
+  useEffect(() => {
+    const orbit = controls.current;
+    if (!orbit || flight.current || lastKind.current !== "stadium") return;
+    orbit.maxDistance = stadiumMaxDistance(stadiumFitDistance(aspect));
+  }, [aspect]);
 
   useFrame((state, delta) => {
     const orbit = controls.current;
@@ -197,7 +244,30 @@ export function CameraRig({
       !current && lastKind.current === "stadium" && !touched.current && !reducedMotion;
     writeHeading(heading, camera);
 
-    if (!current) return;
+    if (!current) {
+      // Seated, the camera does not move, so there is nothing to hold back.
+      const kind = lastKind.current;
+      if (kind !== "stadium" && kind !== "block") return;
+      const at = camera.position;
+      if (at.equals(clearAt.current)) return;
+      // A turn that swings the camera into something moves it in or out
+      // along its line of sight; a zoom stops at the first thing in the way.
+      const held = holdClear(
+        rows,
+        orbit.target.toArray(),
+        [at.x, at.y, at.z],
+        clearAt.current.toArray(),
+        CLEARANCE[kind],
+        orbit.minDistance,
+        orbit.maxDistance,
+      );
+      const before = at.clone();
+      if (held) at.set(...held);
+      else at.copy(clearAt.current);
+      if (at.distanceToSquared(before) > 1e-8) camera.lookAt(orbit.target);
+      clearAt.current.copy(at);
+      return;
+    }
     current.elapsed += delta;
     const t = Math.min(1, current.elapsed / current.seconds);
     if (t >= 1) {
@@ -205,12 +275,9 @@ export function CameraRig({
       return;
     }
     const k = easeInOut(t);
-    const [x, y, z] = current.to.position;
     const [lx, ly, lz] = current.to.target;
     camera.position.set(
-      MathUtils.lerp(current.fromPosition.x, x, k),
-      MathUtils.lerp(current.fromPosition.y, y, k),
-      MathUtils.lerp(current.fromPosition.z, z, k),
+      ...flightPoint(current.fromPosition.toArray(), current.to.position, current.lift, k),
     );
     look.current.set(
       MathUtils.lerp(current.fromLook.x, lx, k),
