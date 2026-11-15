@@ -49,6 +49,14 @@
   --color-scene-kit-keeper: #b8e34a; /* goalkeepers */
   --color-scene-skin-light: #e3b592; /* people: heads run between these two */
   --color-scene-skin-dark: #7a4f35;
+  --color-scene-paving: #454c63; /* outside: plaza slabs and pavements */
+  --color-scene-paving-light: #5f6780; /* walkways, steps, footbridges */
+  --color-scene-asphalt: #171b29; /* the road */
+  --color-scene-foliage: #24573a; /* pines */
+  --color-scene-foliage-light: #3b7a45; /* palm fronds */
+  --color-scene-bark: #4a3a2e; /* trunks */
+  --color-scene-lamp: #ffc98a; /* street lamps, lit windows, counters: the only warm light */
+  --color-scene-taillight: #ff3a2f; /* tail lights and tower beacons */
 
   /* Messages only */
   --color-ok: #3ddc84;
