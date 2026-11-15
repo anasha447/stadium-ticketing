@@ -95,9 +95,8 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
-- **Active track:** frontend F-track (ADR-0006) — Sprint **F4 Atmosphere** first, then back to F3 (order changed 14 Nov 2026: F401 → F402 → F403 → F303 → F304 → F404) → `docs/process/FRONTEND-TICKETS.md`
-- **Active ticket:** TKT-F404 — `impeccable` audit, `ui-taste` review, performance pass — built, PR open. It is the last F-track ticket; next is the backend again (TKT-102)
-- **Backend, paused at:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` before resuming
+- **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F404 merged on 15 Nov 2026; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`
+- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` (D-1 to D-8) before starting; mentor mode applies again
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
 
