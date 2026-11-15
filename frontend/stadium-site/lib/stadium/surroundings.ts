@@ -103,6 +103,26 @@ export function groundHeight(depth: number): number {
   return -STEPS.rise * (Math.floor((depth - PLAZA.edge) / STEPS.tread) + 1);
 }
 
+// --- The uplights at the foot of the outer wall -----------------------------
+
+/** How far across the plaza the light on the wall still shows on the paving. */
+export const WASH_REACH = 86;
+
+const UPLIGHT_LOOP = loopLength(OUTER_DEPTH);
+export const UPLIGHTS = Math.round(UPLIGHT_LOOP / 9);
+/** How far apart the uplights are, measured along the wall. */
+export const UPLIGHT_GAP = UPLIGHT_LOOP / UPLIGHTS;
+
+/**
+ * How bright the wall's light is at a distance round the wall, 0.4 to 1:
+ * brightest over an uplight, dimmer half way to the next. The wall and the
+ * paving in front of it both use this, so their scallops line up.
+ */
+export function uplightScallop(distance: number): number {
+  const off = ((((distance % UPLIGHT_GAP) + UPLIGHT_GAP) % UPLIGHT_GAP) / UPLIGHT_GAP - 0.5) * 2;
+  return 0.4 + 0.6 * Math.exp(-((off / 0.55) ** 2));
+}
+
 // --- Walkways and gates -----------------------------------------------------
 
 export const WALKWAY_WIDTH = 12;
@@ -564,7 +584,8 @@ export function buildCity(): Building[] {
       if (keep > 0.8 - 0.4 * far) continue;
       // The walkways stay open all the way to where their paving ends.
       if (depth < WALKWAY_END && acrossWalkway(x, z) < 34) continue;
-      buildings.push({ x, z, wide, deep, tall: 9 + 22 * height * height + 16 * far * height });
+      // Low near the stadium, where the camera can come down to rooftop height.
+      buildings.push({ x, z, wide, deep, tall: 9 + 16 * height * height + 22 * far * height });
     }
   }
   return buildings;
