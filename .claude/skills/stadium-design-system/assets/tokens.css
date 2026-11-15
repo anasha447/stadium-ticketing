@@ -11,7 +11,7 @@
   --color-night-700: #212a45; /* borders on solid surfaces */
   --color-flood-50: #f4f1ea;  /* primary text */
   --color-flood-300: #a7aec2; /* secondary text */
-  --color-flood-500: #6b7390; /* hints, disabled */
+  --color-flood-500: #7b83a0; /* hints, disabled: 4.5:1 or more on every night surface */
 
   /* Action: the single orange */
   --color-signal-400: #ff7a45; /* hover */

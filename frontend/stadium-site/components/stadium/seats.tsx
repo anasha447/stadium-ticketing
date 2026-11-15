@@ -27,6 +27,10 @@ import { SEAT_COLOURS, type SeatInstances } from "@/lib/stadium/seats";
 //
 // Seat States are live. When someone else takes a seat in the open Block it
 // flashes a bright amber once and settles into the held colour.
+//
+// Colour is never the only sign: in the open Block a held seat is also drawn
+// smaller, as if pushed back out of reach. That stays true with reduced
+// motion, when there is no flash.
 
 const TIER_COLOUR: Record<Tier, ColorToken> = {
   CLUB_PREMIUM: "tierPremium",
@@ -44,6 +48,11 @@ const LIGHT_SECONDS = 0.12;
 const PULSE_SECONDS = 0.7;
 /** How far the flash is from the held colour towards white. */
 const PULSE = 0.75;
+
+/** How big a held seat is drawn in the open Block, against a free one. */
+const HELD_SIZE = 0.6;
+/** The parts of a transform that carry its size (the rest is where it is). */
+const SIZE_CELLS = [0, 1, 2, 4, 5, 6, 8, 9, 10];
 
 /** How much of its colour a dimmed Block keeps. */
 const DIMMED = 0.2;
@@ -139,8 +148,10 @@ export function Seats({
 
   // Work out how every Block should look now, and fade the ones that changed.
   useEffect(() => {
-    const colours = mesh.current?.instanceColor?.array as Float32Array | undefined;
-    if (!colours) return;
+    const instanced = mesh.current;
+    const colours = instanced?.instanceColor?.array as Float32Array | undefined;
+    if (!instanced || !colours) return;
+    const matrices = instanced.instanceMatrix.array as Float32Array;
 
     const yours = new Color(COLOR.stateMine);
     const flash = new Color(COLOR.stateHeld).lerp(new Color(COLOR.flood50), PULSE);
@@ -179,6 +190,23 @@ export function Seats({
       }
       // The Fan's own seats keep their colour whatever the Block is doing.
       for (const offset of own) yours.toArray(to, offset * 3);
+
+      // Every seat back to full size, then the held ones in the open Block
+      // shrunk about their feet. Only a Block that is or was open can have
+      // shrunk seats, so hovering others never touches the transforms, and
+      // only this Block's part of them is sent to the graphics card.
+      if (isOpen || shown !== "mosaic") {
+        const first = seats.blockStart[block.id] * 16;
+        matrices.set(seats.matrices.subarray(first, first + size * 16), first);
+        if (isOpen) {
+          for (let i = 0; i < size; i++) {
+            if (open.states[i] !== "H" || own.includes(i)) continue;
+            for (const cell of SIZE_CELLS) matrices[first + i * 16 + cell] *= HELD_SIZE;
+          }
+        }
+        instanced.instanceMatrix.addUpdateRange(first, size * 16);
+        instanced.instanceMatrix.needsUpdate = true;
+      }
 
       // If only the light went on or off, change quickly: it is feedback.
       const onlyLight = before.startsWith(`${base}|`);

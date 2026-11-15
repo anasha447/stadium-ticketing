@@ -70,7 +70,7 @@ is looking, and a view score out of 100 with the distance to the pitch.
 | TKT-F301 | Waiting Room screen with the Draw animation | ✅ | [#20](https://github.com/anasha447/stadium-ticketing/issues/20) | [#21](https://github.com/anasha447/stadium-ticketing/pull/21) |
 | TKT-F302 | "Your seats" drawer (max 4), Hold, countdown, Quote | ✅ | [#22](https://github.com/anasha447/stadium-ticketing/issues/22) | [#23](https://github.com/anasha447/stadium-ticketing/pull/23) |
 | TKT-F303 | Sign-in with the fake one-time code, demo checkout, Order status | ✅ | [#30](https://github.com/anasha447/stadium-ticketing/issues/30) | [#31](https://github.com/anasha447/stadium-ticketing/pull/31) |
-| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | 🔎 | [#32](https://github.com/anasha447/stadium-ticketing/issues/32) | [#33](https://github.com/anasha447/stadium-ticketing/pull/33) |
+| TKT-F304 | Confirmation, Tickets, My Tickets, "mine" seats in the stadium | ✅ | [#32](https://github.com/anasha447/stadium-ticketing/issues/32) | [#33](https://github.com/anasha447/stadium-ticketing/pull/33) |
 
 **TKT-F301 — Waiting Room.** "Choose your seats" now leads here. The Fan joins with one
 button, sees how many are waiting and a countdown to the Draw, then gets a place and
@@ -102,6 +102,14 @@ link to see the seats in the stadium and, on the mock, "Reset the demo". In the
 stadium, bought seats are the Fan's own colour with no fan on them, and they count
 towards the four seats per Match.
 
+**TKT-F404 — Audit and performance.** An `impeccable` audit and a `ui-taste` look over
+every screen. The hint colour `flood-500` was under the 4.5:1 contrast bar on the page
+and on panels, so it is lighter now and passes on every night surface. Text selection,
+the caret, scrollbars and radio buttons use the palette instead of browser defaults.
+Held seats in an open Block are drawn smaller as well as amber, so the state does not
+rest on colour, also with reduced motion. Rebuilding the fans (about 4 ms) no longer
+happens in the stadium view, where none are drawn and the Match stream is busiest.
+
 ## Sprint F4 — Atmosphere and polish
 
 | Ticket | Title | Status | Issue | PR |
@@ -109,7 +117,7 @@ towards the four seats per Match.
 | TKT-F401 | Night sky, floodlights, live match, fans on sold seats | ✅ | [#24](https://github.com/anasha447/stadium-ticketing/issues/24) | [#25](https://github.com/anasha447/stadium-ticketing/pull/25) |
 | TKT-F402 | Live Seat State updates over SSE (mock stream) | ✅ | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | [#27](https://github.com/anasha447/stadium-ticketing/pull/27) |
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | 🔎 | [#28](https://github.com/anasha447/stadium-ticketing/issues/28) | [#29](https://github.com/anasha447/stadium-ticketing/pull/29) |
-| TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ☐ last, after F304 | | |
+| TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | 🔎 | [#34](https://github.com/anasha447/stadium-ticketing/issues/34) | [#35](https://github.com/anasha447/stadium-ticketing/pull/35) |
 
 **TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
 edge, and a match on the pitch: 22 players, a referee and a ball on a loop. Every sold
@@ -143,27 +151,26 @@ should pick it up.
 
 | What | Found in | Goes to |
 |---|---|---|
-| The 3D view has not been seen at phone width or used by touch on a real device: the panels were checked at 375 px, but the preview leaves the canvas black at that size | F201–F204, F403 | F404, on a phone |
-| Reduced motion is coded (fade-in cuts, no auto-rotation, no pulse) but not checked with the setting on; the preview cannot switch it | F203, F403 | F404 |
-| On a phone the mini-map is 82 × 98 px, too small to tap one Block reliably; tapping the stands is the way there | F403 | F404, if wanted |
+| The 3D view has not been seen at phone width or used by touch on a real device: the panels were checked at 375 px, but the preview leaves the canvas black at that size | F201–F204, F403 | a check on a real phone |
+| Reduced motion is coded (fade-in cuts, no auto-rotation, no pulse) but not checked with the setting on; the preview cannot switch it | F203, F403 | a check on a real device |
+| On a phone the mini-map is 82 × 98 px, too small to tap one Block reliably; tapping the stands is the way there | F403 | later, if wanted |
 | "Pick seats together" is worked out in the browser; the backend's `mode=ADJACENT` is still not in the mock or used | F102, F302 | when the gateway exists |
-| A held seat pulses only when it is taken; at rest, and always with reduced motion, it differs by colour only (motion.md asks for a static outline) | F203, F402 | F404 |
-| The LED boards round the pitch and the two scoreboards from the brief are in no ticket | F401 | F404, if wanted |
-| "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | F404 |
-| The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | F404 |
-| "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | F404 |
-| Bought seats in the "yours" colour were not seen on screen (the canvas in the preview pane is too small to tell); the drawer's count and the seat-view line were | F304 | F404 |
+| The LED boards round the pitch and the two scoreboards from the brief are in no ticket | F401 | later, if wanted |
+| "Play the match" (shown with reduced motion) and the fans' rise were not seen with reduced motion switched on | F401 | a check on a real device |
+| The preview pane draws about one frame a second, so the match and the fans' rise were checked frame by frame, not at full speed. Frame cost was measured by timing renders, not by counting frames per second | F401 | a check on a real device |
+| "Your seats" on a phone opens from a button and has only been checked at desktop width | F302 | a check on a real device |
+| Bought seats in the "yours" colour were not seen on screen (the canvas in the preview pane is too small to tell); the drawer's count and the seat-view line were | F304 | a check on a real device |
 | A declined payment and the retry with another method (`payment-attempts`) are in neither the mock nor the UI | F303 | when the gateway exists |
-| The Order's "paid" and "failed" states were seen; "failed" was only tested in code (Hold running out mid-payment) | F303 | F404 |
-| The amber pulse and the "Another Fan has just taken this seat" line in seat view were not seen on screen at full speed; the taken-seat notice was | F402 | F404 |
-| The cost of rebuilding the fans on each stream update was not measured (the preview pane draws too few frames) | F402 | F404 |
-| New fans pop into a seat sold while the Block is open; they do not rise | F402 | F404, if wanted |
+| The Order's "paid" and "failed" states were seen; "failed" was only tested in code (Hold running out mid-payment) | F303 | a check on a real device |
+| The amber pulse and the "Another Fan has just taken this seat" line in seat view were not seen on screen at full speed; the taken-seat notice was | F402 | a check on a real device |
+| New fans pop into a seat sold while the Block is open; they do not rise | F402 | later, if wanted |
 | The mock's other Fans live in the browser, so the match list and match page do not see them, and two tabs each run their own | F402 | when the gateway exists |
-| Dragging during a camera flight waits for the landing | F203 | F404, if it feels wrong in use |
-| The full `impeccable` and `ui-taste` reviews were skipped from F202 on | F202–F204 | F404 |
+| Held seats drawn smaller, and fans after the F404 change, were not seen on screen: the app window was hidden, so the canvas did not draw | F404 | a check on a real device |
+| The `impeccable` source detector found nothing; its rendered (URL) scan was not run | F404 | later, if wanted |
+| Dragging during a camera flight waits for the landing | F203 | later, if it feels wrong in use |
 | The roof is a short, see-through ring; the plan is a rounded rectangle, not the real oval | F201 | F401, if wanted |
 | The view score is a home-made formula | F204 | backend, if it ever supplies one |
-| The Draw animation has only been seen at 1 frame per second (the preview pane throttles it) | F301 | F404 |
+| The Draw animation has only been seen at 1 frame per second (the preview pane throttles it) | F301 | a check on a real device |
 | The demo crowd is 3,600 Fans so the longest wait is 18 seconds; the Registration Window before booking opens is not shown | F301 | the backend tickets |
 
 ## Backend work this track has created

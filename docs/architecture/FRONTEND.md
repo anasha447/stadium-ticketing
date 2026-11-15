@@ -158,7 +158,13 @@ frame on integrated graphics, so only Blocks within 45 m of the open one get the
 figure and the rest get a single block with a head-coloured top, which brought that down
 to about 12%. In seat view the fans within 1.3 m of the Fan's own seat are left out, so
 the heads in the row in front do not cover the pitch. The south end wears the visiting
-colours, everyone else the home colours.
+colours, everyone else the home colours. Building the fans from Seat States takes about
+4 ms on a fast laptop, so it is skipped while no Block is open: the stadium view draws
+no fans and is where the Match stream is busiest.
+
+**Held seats** in the open Block are drawn at 60% size as well as in amber, so the state
+does not rest on colour, also with reduced motion. Only the open Block's transforms are
+rewritten and uploaded when its states change.
 
 **Touch, keyboard and reduced motion.** One finger drags to spin or look around, two
 fingers zoom; in seat view a pinch narrows the field of view, as the wheel does. Moving
