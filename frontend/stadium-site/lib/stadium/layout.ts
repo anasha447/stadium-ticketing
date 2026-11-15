@@ -27,6 +27,9 @@ const CORNERS = [
   { x: CX, z: CZ }, // south-east
 ];
 
+/** Where the corner arcs are centred, and their radius at the front of the bowl. */
+export const RING_CORNER = { x: CX, z: CZ, radius: FRONT_CORNER_RADIUS };
+
 export interface LevelProfile {
   /** How far behind the front of the bowl the first Row starts. */
   startDepth: number;
