@@ -281,20 +281,21 @@ only on return values. Every bug fixed gets a failing test first.
 | Property | Test | Ticket |
 |---|---|---|
 | Overselling backstop | second SOLD row for a seat rejected by the index; still rejected with Redis flushed | TKT-103, TKT-501 |
-| Generator | exactly 5000 seats, 1000 VIP, every seat in one Block, idempotent | TKT-104 |
+| Generator | the frontend's stadium: 120 Blocks, 60,560 Seats, Tiers by position, idempotent | TKT-104 |
 | Projection | flush → warmup restores exact state; warmup twice = same state | TKT-106 |
 | Allocator correctness | 500 threads race for the same 4 seats → exactly one Hold (repeat 100× in CI) | TKT-202 |
 | Group atomicity | 4 seats requested, 4th taken → **zero** seats held | TKT-202 |
 | Fan cap | 5th seat across live holds rejected | TKT-202 |
 | Lazy expiry | hold with 1 s TTL → seats allocatable with sweeper disabled | TKT-203 |
 | Sweep | expired hold released, counters correct, `hold.expired` emitted once | TKT-205, TKT-305 |
-| Adjacency | every Run contiguous, length k, in one Block; no Orphan when avoidable | TKT-301, TKT-302 |
+| Adjacency | every Run contiguous, length k, in one Row; no Orphan when avoidable | TKT-301, TKT-302 |
 | Pricing | importance × tier × demand × hoursToKickoff, floor, cap, discount ladder | TKT-303 |
 | Quote immutability | changing price inputs after issue does not change the Quote | TKT-304 |
 | Idempotency | 50 concurrent `POST /orders` with one key → one Order, one charge | TKT-503 |
 | Saga | failure injected at each step → correct compensation, no charge without ticket | TKT-505 |
 | Rotating Credential | expired code rejected; second scan is a Dispute naming the first gate | TKT-1101, TKT-1102 |
-| End to end | k6 50k VUs → zero oversell, zero duplicate charge, pool never exhausted | TKT-1204 (smoke: TKT-804) |
+| Admission | never more than 10,000 admitted at once; 10 min without a Hold → out; 30 min at most | TKT-702 |
+| End to end | k6: 10k admitted Fans sell out 60,560 Seats → zero oversell, zero duplicate charge, pool never exhausted; Waiting Room streams to the laptop's limit | TKT-1204 (smoke: TKT-803) |
 
 ## 8. Skills — which one, when
 

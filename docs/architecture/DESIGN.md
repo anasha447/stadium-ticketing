@@ -13,7 +13,7 @@ Sections marked **⭐ Stretch** are beyond the M3 finish line (see ROADMAP).
 | 4 | Duplicate payments | `UNIQUE(hold_id)`, Idempotency-Key, Confirmation Saga, Outbox |
 | 5 | Scalping | zero-margin resale, Purchase Limit on Verified Identity, Draw |
 | 5b | QR copying | Rotating Credential, device binding, first-scan-wins |
-| 6 | Adjacent seats | per-Block bitmaps, Run search, No-Orphan scorer |
+| 6 | Adjacent seats | Row slices of the Block state strings, Run search, No-Orphan scorer |
 | 7 | Pricing | pure pricing module, immutable Quote |
 | A | Advanced | seat geometry and the No-Orphan rule |
 | B–D | ⭐ Stretch | demand pricing, fraud graph, PDF tickets |
@@ -24,15 +24,31 @@ Sections marked **⭐ Stretch** are beyond the M3 finish line (see ROADMAP).
 
 Four layers, outermost first:
 
-1. **Waiting Room (gateway).** A **Registration Window** opens ~24 h before
-   `bookingOpensAt`. One slot per **Verified Identity** — 50 tabs get one position.
-   At open, a **Draw** shuffles all registrants into a Redis sorted set. The admission
-   filter pops the head at a *measured* rate (start 200/s; tune from p99 latency and
-   Hikari saturation) and issues a signed **Admission Token** (scoped to the match).
+1. **Waiting Room (gateway).** Sized for **100,000 Fans** per Match. A **Registration
+   Window** opens ~24 h before `bookingOpensAt`. One slot per **Verified Identity**:
+   50 tabs get one position. At open, a **Draw** shuffles all registrants into a Redis
+   sorted set; anyone who joins later goes to the back.
+   - **The Admission Cap: at most 10,000 Fans admitted at once.** The admitter lets the
+     next Fans in, in Draw order, at most 200 a second (later tuned from p99 latency and
+     Hikari saturation, TKT-1202), and only while fewer than 10,000 hold a live
+     admission. The count protects the system; the rate protects the moment, so the
+     stadium page fills to 10,000 in about 50 s instead of one.
+   - **How long an admission lasts.** 10 minutes while the Fan has no live Hold. A Hold
+     stops that clock, and the Hold's own 8 minutes count instead. If the Hold ends
+     without an Order (it ran out, or the Fan let it go), the 10 minutes start again.
+     An admission never lasts more than **30 minutes** in all, and an Order CONFIRMED ends
+     it at once. A Fan whose admission ends goes back to `NOT_JOINED`; joining again puts
+     them at the back. So nobody can camp on one of the 10,000 places.
+   - **One number for everyone.** The Draw fixes each Fan's drawn position once. After
+     that only "now serving up to place N" moves, and it only goes up. The gateway
+     publishes N over Redis pub/sub and writes the same tiny message on every open
+     stream; each Fan's place is `drawnPosition − N`. 100,000 waiting Fans cost one
+     broadcast per change, not 100,000 different messages.
    - The token is required for `POST /matches/{m}/holds`. A successful Hold returns a
      **checkout grant** bound to `holdId` that expires with the Hold; `POST /orders`
      requires the grant, not the token. **(RF-07)**
-   - 50,000 arrivals become a constant 200/s stream; 1250 buyers clear in minutes.
+   - About 24,000 buyers (60,560 Seats at ~2.5 each) clear in about 10 minutes when
+     10,000 shop at a time and each takes ~4 minutes.
    - The Draw removes the bot advantage of being fastest at T-0.
    - **Why a random Draw is fair.** Fairness here means *equal odds per person*, not
      *reward for speed*. First-come-first-served looks fair but rewards whoever is
@@ -43,7 +59,8 @@ Four layers, outermost first:
      A weighted Draw (members or loyal Fans first) is a possible extension (Icebox).
 2. **Read path never touches the write path.** Match lists, seat-map snapshots,
    standings, weather and scores come from Redis/CDN with stale-while-revalidate.
-   Seat changes reach browsers as **deltas over SSE**, never polling.
+   Seat States are read as they are stored, one string per Block (ADR-0008), and
+   changes reach browsers as **`seat-delta` events over SSE**, never polling.
 3. **Bulkheads and deliberate scarcity.** Resilience4j rate limiter + bulkhead per route;
    Hikari pools small (~20) so Postgres is never the component that fails. Queue depth
    is the backpressure signal.
@@ -51,11 +68,13 @@ Four layers, outermost first:
 
 ## 2. Double-booking — Redis is the fast arbiter, Postgres the final one
 
-- Seat state per match: hash `match:{m}:seats`, value `A` | `H:<holdId>` | `S`.
-- **Lua `hold_seats`** takes all requested seats and either flips *all* `A → H:<holdId>`
-  or returns the conflicts. Redis runs Lua atomically on its single thread → no
-  interleaving, and **all-or-nothing group holds** in one round trip.
-  The same script updates Block bitmaps and occupancy counters (O(1) Admin heatmap).
+- Seat State per Match: one string per Block, `match:{m}:states:<blockId>`, one
+  character `A` | `H` | `S` per Seat (ADR-0008); `match:{m}:seat-holds` says which Hold
+  owns each `H`. Postgres holds the layout and the Seat Claims only (ADR-0007).
+- **Lua `hold_seats`** takes all requested Seats and either flips *all* `A → H` (and
+  records the holdId) or returns the conflicts. Redis runs Lua atomically on its single
+  thread → no interleaving, and **all-or-nothing group holds** in one round trip.
+  The same script updates the Match and per-Block occupancy counters (O(1) Admin heatmap).
 - **Durable backstop:** `seat_claims` with
   `UNIQUE (match_id, seat_id) WHERE status = 'SOLD'`, written in **inventory's** confirm
   transaction. If the index fires, the sale is rejected and Redis repaired.
@@ -73,9 +92,11 @@ Four layers, outermost first:
 
 ## 3. Abandoned holds — TTL is the clock of record
 
-1. **Lazy expiry (correctness).** `match:{m}:hold:<h>` has TTL 480 s. A seat whose value
-   names a hold with no live key **is available** — every read and every script treats it
-   so. No sweeper is needed for correctness.
+1. **Lazy expiry (correctness).** A Hold lives 480 s; its expiry is its score in
+   `match:{m}:holds:expiring`. A Seat held by a Hold whose expiry has passed **is
+   available** to every script, so no sweeper is needed for correctness. The read path
+   (`GET seat-states`) shows such a Seat as `H` until the sweeper frees it, about 2 s
+   later: a late colour, never a wrong sale (ADR-0008).
 2. **Active release (UX).** ZSET `match:{m}:holds:expiring` scored by expiry epoch.
    A sweeper (1 s tick, one pod via ShedLock) runs `release_hold` for expired members and
    emits `hold.expired` → seats turn green in every browser within ~1 s.
@@ -151,20 +172,26 @@ The 4-seat cap is enforced in three independent places: pricing rejects >4, Lua 
 
 ## 6. Four adjacent seats + Group Discount
 
-- **Adjacency exists only inside a Block** (seats between aisles). One Redis bitmap per
-  Block, `match:{m}:block:<b>`, bit index = `position_in_block`. **(RF-04)**
-- Two UX modes: **pick for me** (quantity + preference → Allocator, capability A) and
-  **choose on map** (explicit seat ids; validated as contiguous if a Group Discount is claimed).
-- **Group Discount** is a pure function of position: 0% / 5% / 10% / 15%, max 4 seats.
+- **Adjacency exists only inside a Row** of one Block (a Block has aisles on both
+  sides). The Run search reads a Row as a slice of its Block's state string; where the
+  slice starts comes from `row_seats`. **(RF-04)**
+- Two UX modes: **pick for me** (`mode=ADJACENT`: quantity + preference → Allocator,
+  capability A) and **choose on map** (explicit Seat ids).
+- **Group Discount** is a pure function of position, 0% / 5% / 10% / 15%, max 4 Seats,
+  and applies only when every Seat of the Hold sits together in one Row. The backend
+  checks that itself; the client never claims it.
 
 ## 7. Pricing (module inside inventory)
 
 ```
-unit    = basePrice(tier, section) × importance(match) × min(demand, SURGE_CAP)
+unit    = basePrice(match, tier) × importance(match) × min(demand, SURGE_CAP)
 price   = max(unit × timeDecay(hoursToKickoff), PRICE_FLOOR)
 line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
 ```
 
+- **Base Price:** the Match's Price Override for that Tier if there is one, otherwise
+  the default from configuration. Overrides lock at `bookingOpensAt`, so the Base Price
+  a Fan sees on the Seat Map never changes under them. Tier belongs to the Block.
 - Composition order is fixed: surge **before** decay; floor wins last. A surge never
   cancels the final-hours discount.
 - **Time Decay** applies to unsold inventory only, monotone, published in advance.
@@ -177,9 +204,9 @@ line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
 
 ## A. Spatial geometry & the No-Orphan rule (inventory, EP-3)
 
-- **Block** = maximal span of seats between aisles (or aisle and section edge).
-- **Orphan** = a free Run of length 1 inside a Block *after* an allocation
-  (incl. a single seat against an aisle, or between two occupied spans).
+- **Row** = one line of Seats inside a Block; the Block's aisles are its two ends.
+- **Orphan** = a free Run of length 1 inside a Row *after* an allocation
+  (incl. a single Seat against an aisle, or between two occupied spans).
 - The scorer is a **soft constraint**: if every option creates an Orphan, the allocation
   still succeeds — otherwise the last seats become unsellable and **Yield** drops.
 
@@ -204,7 +231,7 @@ line_i  = round(price × (1 − groupDiscount(i)))          i = 1..4
 - Why catalog: Streams brings RocksDB, rebalancing and new failure modes; the hot path
   must stay boring.
 - **Guardrails (mandatory):** published cap ≤ 1.5×, Price Floor wins, surge before decay,
-  no Quote or Order ever repriced. Recommended: surge on VIP only, disclosed in the UI.
+  no Quote or Order ever repriced. Recommended: surge on Club Premium and the VIP Tiers only, disclosed in the UI.
 
 ## C. ⭐ Stretch — Asynchronous Fraud Ring Detection (identity `riskgraph/`, EP-7)
 

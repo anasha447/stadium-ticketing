@@ -5,13 +5,15 @@
 
 ## What this project is
 
-A microservices platform that sells **5000 seats per football match** (1000 VIP),
-mirrors real fixtures and live scores, and survives a **50,000-user flash crowd** at
-the moment booking opens. Portfolio project, built as a learning exercise.
+A microservices platform that sells **60,560 Seats per football match** (120 Blocks on
+three Levels, four Tiers), mirrors real fixtures and live scores, and survives a
+**100,000-Fan flash crowd** at the moment booking opens, with at most 10,000 admitted
+at once. Portfolio project, built as a learning exercise.
 
-**The sentence that shapes everything:** 5000 seats ÷ 4 max = ~1250 buyers per match.
-The crowd is a *queueing and read* problem, not a database problem. Queue at the edge,
-arbitrate seats atomically in Redis, let Postgres see only the ~1250 real sales.
+**The sentence that shapes everything:** 60,560 Seats ÷ 4 max = at least 15,140 buyers
+per match. The crowd is a *queueing and read* problem, not a database problem. Queue at
+the edge, arbitrate Seats atomically in Redis, let Postgres store the layout and see only
+the real sales (ADR-0007, ADR-0008).
 
 ## Your role here — mentor mode (binding)
 
@@ -95,8 +97,9 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
-- **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F404 merged on 15 Nov 2026, and F405 (the stadium's surroundings and camera limits, added the same day) is in review; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`
-- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done). Read `docs/process/FRONTEND-DEVIATIONS.md` (D-1 to D-8) before starting; mentor mode applies again
+- **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F405 merged by 16 Nov 2026; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`. The frontend changes only after the backend is done (second table in `docs/process/FRONTEND-DEVIATIONS.md`)
+- **Re-plan:** issue #39 (16 Nov 2026) resolved D-1 to D-9 into the backend docs: 60,560 Seats, layout-not-Seats in Postgres, Block strings in Redis, new Tier names, Admission Cap, Sprints 6–8 renumbered
+- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done); starts once #39 is merged. Mentor mode applies again
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
 

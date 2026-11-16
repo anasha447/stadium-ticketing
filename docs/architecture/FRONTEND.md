@@ -226,10 +226,12 @@ action, never the HTTP status alone:
 | `/problems/order-exists` | go to that Order |
 | anything else | generic message with a retry |
 
-Only `seats-unavailable` exists in ARCHITECTURE §11 today. The others are the names in
-`lib/api/problem.ts`; the backend tickets confirm or rename them.
+All of these are now listed in ARCHITECTURE §11 (Problem types), with the ticket that
+builds each.
 
 ## 6. Contracts the frontend fixed first
 
-Seat count, Block, Tier and seat id differ from the backend docs. See
+Seat count, Block, Tier, seat id and the response shapes were fixed here first and
+adopted by the backend on 16 Nov 2026. What the frontend changes once the backend is
+done (new Tier names, time left to choose, `mode=ADJACENT`) is listed in
 [`FRONTEND-DEVIATIONS.md`](../process/FRONTEND-DEVIATIONS.md).

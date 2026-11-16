@@ -48,8 +48,8 @@ One of the three floors of the stadium: lower, club or upper.
 _Avoid_: tier, deck, ring
 
 **Tier**:
-The price class of a Seat: Club Premium, Category 1, Category 2 or Category 3.
-_Avoid_: class, price band
+The price class of a Seat, from best to cheapest: Club Premium, VIP 1, VIP 2 or Standard.
+_Avoid_: class, price band, category
 
 **Block**:
 A numbered group of Seats on one Level, with aisles on both sides (101–140, 201–240, 301–340).
@@ -96,6 +96,14 @@ The part that picks the best Run when a Fan asks for seats together.
 _Avoid_: picker, assigner
 
 ## Prices
+
+**Base Price**:
+The starting price of a Seat's Tier, before Importance, Time Decay and the Group Discount.
+_Avoid_: list price, face value
+
+**Price Override**:
+A Match's own Base Price for a Tier, set by an Admin before booking opens.
+_Avoid_: custom price, special price
 
 **Quote**:
 The fixed price of a Hold, given when the Hold is made and never recalculated.
@@ -154,6 +162,10 @@ _Avoid_: lottery, raffle
 **Admission Token**:
 Permission for one Fan to start booking a Match.
 _Avoid_: pass
+
+**Admission Cap**:
+The most Fans admitted to book one Match at the same time.
+_Avoid_: capacity, slots
 
 **Checkout Grant**:
 Permission to pay for one specific Hold; it ends with the Hold.

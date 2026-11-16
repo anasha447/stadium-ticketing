@@ -26,12 +26,14 @@ and avoids leaving single unsellable Seats.
 and holds (DESIGN §A).
 
 **Acceptance criteria**
-- Example: in a Block `[x . . . . x]`, k = 2 → the best Run leaves no single free Seat.
-- In a Block `[x . . x]`, k = 1 → an Orphan is unavoidable, and a candidate is still
+- Example: in a Row `[x . . . . x]`, k = 2 → the best Run leaves no single free Seat.
+- In a Row `[x . . x]`, k = 1 → an Orphan is unavoidable, and a candidate is still
   returned, marked as allowed to leave one (soft constraint).
-- For random Blocks of 1–40 Seats, random fill and k of 1–4: every candidate is contiguous,
-  of length k, inside one Block, on free Seats only; if any orphan-free placement exists,
+- For random Rows of 1–40 Seats, random fill and k of 1–4: every candidate is contiguous,
+  of length k, inside one Row, on free Seats only; if any orphan-free placement exists,
   the first candidate is orphan-free.
+- The input is a Row's slice of its Block's state string (`A` free, `H`/`S` taken), cut
+  out with the offsets from `row_seats` (ADR-0008).
 - No Spring or Redis in this code.
 
 **Learning focus** — property-based testing with jqwik (generators, shrinking) · soft vs
@@ -47,15 +49,17 @@ hard constraints · Yield · why scoring stays out of Redis.
 hundreds of others pick at the same time.
 
 **Acceptance criteria**
-- The result is k contiguous Seats in one Block, all in the new Hold.
-- 200 concurrent requests on a nearly full Section: no Seat is held twice; every success is contiguous.
+- The result is k contiguous Seats in one Row, all in the new Hold.
+- 200 concurrent requests on a nearly full Block: no Seat is held twice; every success is contiguous.
 - A candidate taken between ranking and holding is skipped in favour of the next one.
 - When no orphan-free Run is left, the request still succeeds with an allowed-Orphan candidate.
 - Nothing available → 409 problem `no-run-available` after at most 3 attempts.
 - The Fan cap applies exactly as for explicit Seats.
+- The frontend's "pick seats together" switches to `mode=ADJACENT` after the backend is
+  done; until then it suggests Seats in the browser and holds them by id.
 
 **Learning focus** — optimistic read + atomic verify (the idea behind compare-and-set and
-`@Version`) · bounded retry · Redis bitmaps.
+`@Version`) · bounded retry · `GETRANGE` on a Row's slice.
 
 **Points** 8 · **Depends on** TKT-301, TKT-204
 
@@ -72,6 +76,9 @@ Group Discount — and never go below the Price Floor.
 - A surge never cancels Time Decay.
 - The Price Floor wins when decay would go below it.
 - Group Discount ladder: Seat 1 = 0 %, 2 = 5 %, 3 = 10 %, 4 = 15 %; 5 Seats rejected.
+  It applies only when every Seat sits together in one Row; otherwise every line is 0 %.
+- Base Price comes from the Match's Price Override for the Tier if there is one,
+  otherwise the default per Tier (Club Premium, VIP 1, VIP 2, Standard) from configuration.
 - Property: the price never rises as kickoff gets closer (demand fixed).
 - Money is calculated with `BigDecimal`, rounded HALF_EVEN once per line.
 
@@ -112,6 +119,8 @@ an earlier step when a later one fails (the saga idea, in miniature).
 - A `contracts` module with no Spring dependency holds the event records, each with a
   schema version, event id, time and Match id; each round-trips through JSON.
 - A Hold → one `seat.held` event keyed by Match id; an expiry → exactly one `hold.expired`.
+- `seat.held` and `seat.released` carry the Seat ids in the `214-R07-12` form; the
+  gateway turns them into the browser's `seat-delta` later (TKT-801).
 - With Kafka down, Holds still succeed and a failure counter increases (best-effort).
 
 **Learning focus** — partitions, keys and ordering · producer idempotence and `acks` ·
