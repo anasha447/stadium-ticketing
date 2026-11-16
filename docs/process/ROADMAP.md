@@ -14,15 +14,19 @@ Ticket IDs: Sprint N uses `TKT-N01…`, numbered in execution order.
 
 | Milestone | After sprint | What you can demo | Interview story |
 |---|---|---|---|
-| **M0 Foundation** | 1 (Nov 24) | 5000-seat map in Postgres + Redis over HTTP, CI green on every PR | multi-module build, Flyway, Testcontainers, CI |
+| **M0 Foundation** | 1 (Nov 24) | the 60,560-Seat stadium in Postgres + Redis over HTTP, CI green on every PR | multi-module build, Flyway, Testcontainers, CI, "store the layout, not the Seats" |
 | **M1 Bookable Core** | 3 (Dec 22) | hold 4 adjacent seats with a priced Quote, expiry, race test with one winner | Redis + Lua atomicity, TTL design, pure domain, TDD |
-| **M2 Portfolio MVP** | 8 (Mar 2, stretch Feb 23) | queue → hold → pay → ticket in a browser, live seat map | flash crowd, saga, idempotency, outbox |
-| **M3 Production-grade = DONE** | 13 (May 11) | real fixtures, fake-OTP identity, gate scanning, metrics, 50k k6 run, Kubernetes, portfolio write-up | observability, load testing, K8s |
+| **M2 Portfolio MVP** | 8 (Mar 2, stretch Feb 23) | queue → hold → pay → ticket in the browser on the real backend, live seat map | flash crowd, saga, idempotency, outbox |
+| **M3 Production-grade = DONE** | 13 (May 11) | real fixtures, gate scanning, metrics, k6 with 10k admitted Fans and the Waiting Room, Kubernetes, portfolio write-up | observability, load testing, K8s |
+
+**Scale target (re-plan, 2026-11-16):** 60,560 Seats per Match, up to 100,000 Fans in
+the Waiting Room, at most 10,000 admitted at once (DESIGN §1).
 | ⭐ Stretch | 14+ | demand pricing, resale, PDFs, fraud graph, bot risk | event streaming, graph analytics |
 
 **Decision point — Sprint 2 Review (Dec 8):** M2 needs ≈ 190 points in 8 sprints.
-Velocity ≥ 26 → aim for **Feb 23**; ~24 → **Mar 2**; < 22 → cut TKT-704 (waiting-room
-polish) and TKT-803 (My Tickets page) from M2 to keep Mar 2.
+Velocity ≥ 26 → aim for **Feb 23**; ~24 → **Mar 2**; < 22 → move TKT-703 (Price
+Override) after M2 to keep Mar 2. The same Review decides what fills the free points in
+Sprints 7–8.
 
 Already cut from M2 (moved to Sprint 9+): the Football-Data **live** adapter (the demo
 uses fixtures), Importance pricing, live scores and weather, rate limiting, cancelling
@@ -69,16 +73,16 @@ never squeeze two sprints into one.
 
 ## Sprint map
 
-### Sprint 1 — Walking Skeleton of the Seat Map · EP-1, EP-3 · 26 pts → M0
+### Sprint 1 — Walking Skeleton of the Seat Map · EP-1, EP-3 · 23 pts → M0
 | Ticket | Title | Pts |
 |---|---|---|
 | TKT-100 | Repository baseline ✅ | 0 |
-| TKT-101 | Walking skeleton: root POM + `inventory` (Web, Actuator) | 3 |
+| TKT-101 | Walking skeleton: root POM + `inventory` (Web, Actuator) ✅ | 3 |
 | TKT-102 | CI on every pull request | 2 |
 | TKT-103 | Postgres + Seat Map schema + overselling backstop | 5 |
-| TKT-104 | Seat Map Generator — 5000 seats, 1000 VIP, Blocks, idempotent | 8 |
+| TKT-104 | Seat Map Generator — 120 Blocks, 60,560 Seats, idempotent | 5 |
 | TKT-105 | Seat Map REST API | 3 |
-| TKT-106 | Redis + Seat State projection + Warmup + Occupancy | 5 |
+| TKT-106 | Redis Seat States + Warmup + Occupancy | 5 |
 
 ### Sprint 2 — Atomic Holds · EP-3 · 24 pts
 | Ticket | Title | Pts |
@@ -116,31 +120,42 @@ never squeeze two sprints into one.
 | TKT-504 | `PaymentGateway` port + mock PSP + Payment Attempts | 3 |
 | TKT-505 | Confirmation Saga: persisted state machine + compensations | 8 |
 
-### Sprint 6 — Tickets & the Edge · EP-5, EP-6 · 23 pts
+### Sprint 6 — Tickets & the Edge · EP-5, EP-6, EP-7 · 21 pts
 | Ticket | Title | Pts |
 |---|---|---|
 | TKT-601 | Outbox publisher + `order.confirmed` | 5 |
 | TKT-602 | Ticket issuance + consumer dedupe | 5 |
 | TKT-603 | `gateway` service: routes to all services | 3 |
-| TKT-604 | `identity` stub: JWT + JWKS; gateway JWT filter replaces `X-Fan-Id` | 5 |
-| TKT-605 | Registration Window + Draw | 5 |
+| TKT-604 | `identity`: fake one-time code → Verified Identity → JWT + JWKS, `GET /auth/session`; gateway JWT filter replaces `X-Fan-Id` | 8 |
 
-### Sprint 7 — Admission & Web App · EP-6, EP-10 · 24 pts
+### Sprint 7 — Waiting Room & Admission · EP-4, EP-6, EP-10 · 19 pts + 5 free
 | Ticket | Title | Pts |
 |---|---|---|
-| TKT-701 | Admission filter + Admission Token + Checkout Grant | 8 |
-| TKT-702 | Next.js scaffold: API client, auth, match list + match page | 5 |
-| TKT-703 | Seat map renderer (sections → blocks → seats, tiers, states) | 8 |
-| TKT-704 | Waiting room screen | 3 |
+| TKT-701 | Registration Window + Draw, Waiting Room status (four phases) | 5 |
+| TKT-702 | Admission: Admission Cap (10,000 at once, 200/s), 10-min idle rule, 30-min ceiling, Admission Token + Checkout Grant | 8 |
+| TKT-703 | Price Override per Match and Tier, locked at `bookingOpensAt` | 3 |
+| TKT-704 | Frontend on the real gateway: match pages, stadium, Waiting Room | 3 |
 
-### Sprint 8 — Live & Checkout · EP-6, EP-10 · 21 pts + 3 buffer → M2
+### Sprint 8 — Live & Checkout · EP-6, EP-10 · 17 pts + 7 free → M2
 | Ticket | Title | Pts |
 |---|---|---|
-| TKT-801 | Hold flow UI: pick on map / pick for me, countdown, Quote | 5 |
-| TKT-802 | Gateway SSE fan-out over Redis pub/sub | 8 |
-| TKT-803 | Checkout + order status + My Tickets (mock payment) | 5 |
-| TKT-804 | End-to-end demo script, portfolio README, k6 smoke (5k VUs) | 3 |
+| TKT-801 | Gateway SSE fan-out over Redis pub/sub: `seat-delta` and "now serving" | 8 |
+| TKT-802 | Frontend on the real gateway: Holds, checkout, Tickets | 3 |
+| TKT-803 | End-to-end demo script, portfolio README, k6 smoke (5k VUs) | 3 |
 | — | Buffer for integration bugs | 3 |
+
+**Renumbered on 2026-11-16 (issue #39).** No GitHub Issue existed for these yet.
+
+| Old | New | Why |
+|---|---|---|
+| TKT-605 Registration Window + Draw | TKT-701 | Sprint 6 grew with the one-time code |
+| TKT-701 Admission | TKT-702 | follows the Draw; gains the Admission Cap and idle rule |
+| new | TKT-703 Price Override | needs the Match's real `bookingOpensAt` (Sprint 4) |
+| TKT-702, 703, 704 (web app) | TKT-704 | built on the F-track; what is left is pointing it at the gateway |
+| TKT-802 SSE fan-out | TKT-801 | |
+| TKT-801, 803 (hold flow, checkout) | TKT-802 | built on the F-track |
+| TKT-804 demo + k6 smoke | TKT-803 | |
+| TKT-1001 fake OTP | mostly TKT-604 | the M2 checkout needs sign-in |
 
 ### Sprint 9 — Real Data & Signals · EP-2, EP-4, EP-5 · 23 pts
 | Ticket | Title | Pts |
@@ -150,10 +165,10 @@ never squeeze two sprints into one.
 | TKT-903 | Importance calculator → pricing input | 5 |
 | TKT-904 | `hold.expired` consumer cancels in-flight Orders | 5 |
 
-### Sprint 10 — Identity & Anti-Scalping · EP-7, EP-6 · 23 pts
+### Sprint 10 — Identity & Anti-Scalping · EP-7, EP-6 · 20 pts
 | Ticket | Title | Pts |
 |---|---|---|
-| TKT-1001 | Fake OTP Verified Identity (`OtpSender` console adapter) | 5 |
+| TKT-1001 | One Verified Identity per phone (hashed), re-verification rules | 2 |
 | TKT-1002 | Device binding | 5 |
 | TKT-1003 | Purchase Limit ledger + saga reserve/release step | 5 |
 | TKT-1004 | Real JWT: refresh tokens, roles Fan/Admin/Steward | 5 |
@@ -173,7 +188,7 @@ never squeeze two sprints into one.
 | TKT-1201 | Prometheus + Grafana + OpenTelemetry tracing | 5 |
 | TKT-1202 | Metric-driven admission rate (p99 + pool saturation) | 5 |
 | TKT-1203 | Admin occupancy heatmap (SSE) | 5 |
-| TKT-1204 | k6 50k VU flash-crowd test + written report | 8 |
+| TKT-1204 | k6 flash crowd: 10k admitted Fans to a sellout, the Waiting Room to the laptop's limit, 100k reasoned in the report | 8 |
 
 ### Sprint 13 — Kubernetes & Portfolio · EP-11 · 24 pts → M3 = DONE
 | Ticket | Title | Pts |
@@ -230,10 +245,11 @@ last. See `FRONTEND-TICKETS.md`._
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass |
 | TKT-F405 | The stadium's surroundings (plaza, ring road, fans arriving, skyline) and a camera that stays on the stadium |
 
-**Effect on backend tickets:** TKT-702, 703, 704, 801 and 803 keep their place and
-shrink to "replace the mock layer with the real API". The contracts the frontend fixed
-first are listed in [`FRONTEND-DEVIATIONS.md`](FRONTEND-DEVIATIONS.md) and are resolved
-when backend work resumes.
+**Effect on backend tickets:** the old web-app tickets became TKT-704 and TKT-802
+(3 points each): point the finished frontend at the gateway. The contracts the frontend
+fixed first were resolved into the backend docs on 2026-11-16 (issue #39); see
+[`FRONTEND-DEVIATIONS.md`](FRONTEND-DEVIATIONS.md), which also lists what the frontend
+changes after the backend is done.
 
 ---
 
@@ -274,4 +290,4 @@ when backend work resumes.
 
 | Sprint | Committed | Completed | Notes |
 |---|---|---|---|
-| 1 | 26 | | baseline sprint — velocity unknown |
+| 1 | 23 | | baseline sprint — velocity unknown; re-planned from 26 on Nov 16 |

@@ -18,9 +18,10 @@
 **Sprint demo**
 ```bash
 curl -X POST localhost:8081/matches/1/holds -H 'X-Fan-Id: 1' -H 'Content-Type: application/json' \
-     -d '{"mode":"EXPLICIT","seatIds":["W-S03-R07-01","W-S03-R07-02"]}'      # 201
+     -d '{"mode":"EXPLICIT","seatIds":["214-R07-01","214-R07-02"]}'          # 201
 # same seats, other Fan → 409 with conflictingSeatIds
-# DELETE /matches/1/holds/{id} → 204; occupancy back to 5000/0/0
+# DELETE /matches/1/holds/{id} → 204; occupancy back to 60560/0/0
+curl 'localhost:8081/matches/1/seat-states?blocks=214' | jq -r '.blocks["214"][0:30]'
 ./mvnw -pl services/inventory verify -Dit.test=HoldRaceIT                  # the race test
 ```
 
@@ -61,15 +62,19 @@ thousands of others try at the same moment.
 Seat inside Redis's single command thread, so no interleaving is possible.
 
 **Acceptance criteria**
-- Given 4 free Seats, when they are held, then all 4 belong to the new Hold, their Block
-  positions are taken and Occupancy is `{4996, 4, 0}`.
+- Given 4 free Seats, when they are held, then all 4 belong to the new Hold, their
+  characters in the Block strings are `H`, and Occupancy is `{60556, 4, 0}` with the
+  Block's counters moved too.
 - Given the 4th requested Seat is already held, then the result is a conflict naming it
   and **no** Seat changes.
 - Given 500 concurrent requests for the same 4 Seats, then exactly one is acquired and 499
   are conflicts, and every Seat names the winner's Hold — repeated 100 times.
 - Given a Fan with a live 3-seat Hold, when they ask for 2 more, then the cap is exceeded
   with current count 3.
-- A Seat whose Hold has expired but was not yet cleaned up can be held.
+- A Seat whose Hold has expired but was not yet cleaned up can be held (lazy expiry
+  through `ZSCORE` on `holds:expiring`, DATA-MODEL §1).
+- An unknown Seat id never reaches the script: `SeatMap.contains` rejects it first, and
+  Java passes each Seat's offset.
 - The script never builds key names; every key carries the Match hash tag.
 
 **Notes** — Called directly from an adapter class: no port (ADR-0005). Time comes from
@@ -97,7 +102,9 @@ moment it expires — even if no background job has run.
 - Releasing the same Hold twice: the second call changes nothing, counters unchanged.
 - Given a Hold that lives 1 s and no sweeper, when it expires, then its Seats show as
   available and can be held again.
-- `GET /matches/{matchId}/seat-states` returns each Seat's state with expiry applied.
+- `GET /matches/{matchId}/seat-states` returns one `A`/`H`/`S` string per Block, read
+  with one `MGET`; `?blocks=101,102` returns only those Blocks. The read does not apply
+  lazy expiry: an expired Seat shows `H` until the sweeper frees it (ADR-0008).
 
 **Out of scope** — the sweeper (TKT-205), the hold endpoints (TKT-204).
 
@@ -114,9 +121,13 @@ notifications are not reliable · waiting in tests with Awaitility.
 
 **Acceptance criteria**
 - `POST /matches/{m}/holds` with explicit Seats → 201 with `holdId`, `seatIds`, `expiresAt`.
-- Seats taken → 409 problem with `conflictingSeatIds`.
-- More than 4 Seats, duplicates or unknown Seat ids → 422; cap exceeded → 422 with `currentSeats`.
-- `GET` of one's own Hold → remaining seconds; of an expired Hold → 404.
+- Seats taken → 409 `/problems/seats-unavailable` with `conflictingSeatIds`.
+- More than 4 Seats, duplicates or unknown Seat ids → 422 `/problems/invalid-hold`; cap
+  exceeded → 422 `/problems/purchase-limit` with `currentSeats`.
+- `GET` of one's own Hold → the Hold with `expiresAt`; of an expired Hold → 404
+  `/problems/hold-expired`.
+- The cap counts live Holds only. Bought Tickets count towards four only once the
+  Purchase Limit ledger exists (TKT-1003); until then the frontend stops it.
 - `DELETE` by another Fan → 404 (do not reveal the Hold exists); by the owner → 204 and
   the Seats are available.
 - The Fan comes from a temporary `X-Fan-Id` header (replaced by JWT in TKT-604); the Hold
