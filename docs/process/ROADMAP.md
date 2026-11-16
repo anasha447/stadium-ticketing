@@ -228,6 +228,7 @@ last. See `FRONTEND-TICKETS.md`._
 | TKT-F402 | Live Seat State updates over SSE (mock stream) |
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the 2D mini-map |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass |
+| TKT-F405 | The stadium's surroundings (plaza, ring road, fans arriving, skyline) and a camera that stays on the stadium |
 
 **Effect on backend tickets:** TKT-702, 703, 704, 801 and 803 keep their place and
 shrink to "replace the mock layer with the real API". The contracts the frontend fixed

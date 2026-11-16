@@ -10,6 +10,9 @@ Status: ✅ merged · 🔎 built, PR open · ▶ in progress · ⏸ put aside fo
 F403 first, then comes back for F303 and F304, and ends with F404. So the order is
 F401 → F402 → F403 → F303 → F304 → F404.
 
+**F405 was added on 15 Nov 2026** (Anas), after the track had closed: one more step for
+the stadium view, the world around the stadium.
+
 ## Sprint F1 — Foundation
 
 | Ticket | Title | Status | Issue | PR |
@@ -118,6 +121,7 @@ happens in the stadium view, where none are drawn and the Match stream is busies
 | TKT-F402 | Live Seat State updates over SSE (mock stream) | ✅ | [#26](https://github.com/anasha447/stadium-ticketing/issues/26) | [#27](https://github.com/anasha447/stadium-ticketing/pull/27) |
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | 🔎 | [#28](https://github.com/anasha447/stadium-ticketing/issues/28) | [#29](https://github.com/anasha447/stadium-ticketing/pull/29) |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ✅ | [#34](https://github.com/anasha447/stadium-ticketing/issues/34) | [#35](https://github.com/anasha447/stadium-ticketing/pull/35) |
+| TKT-F405 | The stadium's surroundings, and a camera that stays on the stadium | 🔎 | [#37](https://github.com/anasha447/stadium-ticketing/issues/37) | [#38](https://github.com/anasha447/stadium-ticketing/pull/38) |
 
 **TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
 edge, and a match on the pitch: 22 players, a referee and a ball on a loop. Every sold
@@ -144,6 +148,29 @@ longer leaves a hover card behind, and on a touch screen the hints say "tap" and
 in "Your seats" are 44 px tall. With reduced motion a camera move fades in from dark
 instead of jumping.
 
+**TKT-F405 — Surroundings and camera.** The stadium no longer floats on a dark disc. It
+stands on a paved plaza, level with the pitch, with steps down to the street. A ring
+road with a planted strip carries 88 cars both ways, on the right, headlights and tail
+lights on. Eight walkways lead to eight gates, each over the road on a footbridge, so
+fans and traffic never meet: 800 fans walk in along them, and about 200 stand at five
+food trucks, five merchandise stalls and two fan zones with a big screen. The two team
+coaches wait at the players' entrance in the west wall. Around it all: 436 stone pines
+and 334 palms, 224 street lamps with warm pools of light, uplights on the outer wall,
+low blocks with lit windows, and on the horizon the Collserola ridge and its tower, the
+Sagrada Família, the Torre Glòries, the two towers by the sea and Montjuïc, faded into
+the sky by fog. Everything repeated is one instanced mesh: 40 draw calls and about a
+tenth more triangles. Cars and walkers are a function of time, like the match.
+
+The camera stays on the stadium (`lib/stadium/camera-bounds.ts`). It cannot be panned.
+It zooms from 30 m over the pitch out to one and a half times the opening view. It is
+never under the ground or inside a wall, the roof or a terrace: every move is checked,
+and a zoom stops at the first thing in the way. Closer than 200 m the camera has come
+in, and may only be in the air over the stadium, so tilting down leads into the bowl
+and the far stand, never down the outside of the wall; to look at the stadium from
+outside, zoom out first. Flights arc over the roof instead of going through it. Inside
+the bowl, below the top of the wall, the street level is not drawn, so a Block and a
+seat cost what they did before.
+
 ## Carried forward
 
 Things noticed along the way that no ticket has closed yet. Each names the ticket that
@@ -167,6 +194,14 @@ should pick it up.
 | The mock's other Fans live in the browser, so the match list and match page do not see them, and two tabs each run their own | F402 | when the gateway exists |
 | Held seats drawn smaller, and fans after the F404 change, were not seen on screen: the app window was hidden, so the canvas did not draw | F404 | a check on a real device |
 | The `impeccable` source detector found nothing; its rendered (URL) scan was not run | F404 | later, if wanted |
+| The traffic and the walking fans were seen frame by frame (the preview pane draws about one frame a second), not at full speed | F405 | a check on a real device |
+| With reduced motion the traffic and the walking fans hold still with the match; coded, not seen with the setting on | F405 | a check on a real device |
+| Frame cost was measured by timing renders at 1981 × 1040 on integrated graphics: the stadium alone about 34 ms, with the new ground about 37, with the city about 39, with everything about 43. In a Block the surroundings add 0.3 ms. Not measured as frames per second, and not on a phone | F405 | a check on a real device |
+| From outside, a low camera stops 200 m from the middle of the pitch, and below about 22° of tilt it cannot zoom in from the long sides: the way in is from above. If that feels like a wall in use, widen the funnel (`FUNNEL`) or lower `STADIUM_COME_IN` | F405 | later, if it feels wrong in use |
+| A turn that swings a zoomed-in camera off the stadium moves it in one step, up to about 20 m, not in a glide | F405 | later, if it feels wrong in use |
+| Flights that arc over the roof were tested in code for every Block; on screen only seat → stadium and stadium → Block were seen | F405 | a check on a real device |
+| After the window changes shape the stadium view keeps its distance; it does not fit itself again | F405 | later, if wanted |
+| The skyline is a sketch: landmarks are low-poly outlines placed by rough compass direction, and the fan zone screens show a still picture | F405 | later, if wanted |
 | Dragging during a camera flight waits for the landing | F203 | later, if it feels wrong in use |
 | The roof is a short, see-through ring; the plan is a rounded rectangle, not the real oval | F201 | F401, if wanted |
 | The view score is a home-made formula | F204 | backend, if it ever supplies one |

@@ -33,9 +33,14 @@ export const EYE_HEIGHT = 1.15;
  */
 export const LOOK_DISTANCE = 0.05;
 
-/** The opening view. A tall, narrow screen sees less sideways, so it stands further back. */
+/** How far back the opening view stands. A tall, narrow screen sees less sideways, so it stands further back. */
+export function stadiumFitDistance(aspect: number): number {
+  return FIT_DISTANCE * Math.max(1, 1.3 / aspect);
+}
+
+/** The opening view. */
 export function stadiumPose(aspect: number): Pose {
-  const distance = FIT_DISTANCE * Math.max(1, 1.3 / aspect);
+  const distance = stadiumFitDistance(aspect);
   const length = Math.hypot(...VIEW_FROM);
   return {
     position: VIEW_FROM.map((v) => (v / length) * distance) as Vec3,

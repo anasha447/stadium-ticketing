@@ -16,6 +16,16 @@ THE STADIUM
 - Mark roughly half the seats as sold, in natural-looking clumps, and put a simple seated fan on every sold seat. Fans wear blue/garnet at one end and blue/white at the other.
 - Night match atmosphere: dark sky with stars, a striped pitch with correct markings, goals, and a simple live match with 22 players, a referee and a ball moving around.
 
+OUTSIDE THE STADIUM (added 15 Nov 2026, TKT-F405)
+- The stadium does not float in space. It stands on a paved plaza with steps, wide walkways to the gates and two fan zones.
+- Mediterranean pines and tall palms around the plaza and along the road, all instanced.
+- A ring road with low-poly cars going both ways, headlights and red tail lights on. Two detailed team buses parked by the players' entrance.
+- Fans walking in from the edge of the map to the gates, and small groups standing at lit food trucks and merchandise stalls.
+- Tall street lamps with warm pools of light; the outer wall lit from below, spilling onto the plaza.
+- No black void at the edge: a low Barcelona skyline on the horizon, blended into the starry sky with fog.
+- It must stay smooth: simple loops for cars and walkers, instanced meshes for everything repeated.
+- The camera stays on the stadium. No panning; zoom limited to the stadium and its inside; never below the ground, never through a wall, a floor or a terrace, never looking up from under anything. Once the camera has come in to the stadium, turning it shows the other side of the stands; it does not end up outside the wall.
+
 THE EXPERIENCE (Waiting Room, then three levels of view)
 0. Waiting Room: the Fan registers, waits, and sees their position move through the Draw with a proper animation, then is admitted into the stadium.
 1. Stadium view: drag to spin the stadium 360 degrees, scroll to zoom, slow automatic rotation until I touch it, plus a "360 tour" button. Hovering a Block highlights it and shows its number, Tier, price and seats left. Seats show the blue/garnet/yellow mosaic.

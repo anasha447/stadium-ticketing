@@ -5,7 +5,6 @@ import {
   AdditiveBlending,
   BackSide,
   BufferGeometry,
-  CanvasTexture,
   Color,
   Float32BufferAttribute,
   type InstancedMesh,
@@ -15,6 +14,9 @@ import {
 import { BLOCKS_PER_LEVEL } from "@/lib/domain/stadium";
 import { COLOR } from "@/lib/design/tokens";
 import { FACADE_HEIGHT, ringPoint, ROOF_INNER_DEPTH } from "@/lib/stadium/layout";
+import { randomFrom } from "@/lib/stadium/random";
+import { glowTexture } from "./painted";
+import { horizonColour } from "./skyline";
 
 // The night around the stadium: a dark sky with stars, and the floodlights
 // under the edge of the roof. Nothing here moves, so it costs the same with
@@ -23,23 +25,13 @@ import { FACADE_HEIGHT, ringPoint, ROOF_INNER_DEPTH } from "@/lib/stadium/layout
 const SKY_RADIUS = 2600;
 const STARS = 1600;
 
-/** A small repeatable random source, so the sky is the same on every visit. */
-function randomFrom(seed: number) {
-  let state = seed;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /** The sky as the inside of a ball: a faint glow along the horizon, black overhead. */
 function skyDome() {
   const dome = new SphereGeometry(SKY_RADIUS, 32, 24);
-  const horizon = new Color(COLOR.night900).lerp(new Color(COLOR.sceneFacade), 0.4);
+  // The same colour the fog fades the city to, so ground and sky meet without a line.
+  const horizon = horizonColour();
   const overhead = new Color(COLOR.night950);
-  const below = new Color(COLOR.night900);
+  const below = horizon;
   const positions = dome.getAttribute("position");
   const colours = new Float32Array(positions.count * 3);
   const colour = new Color();
@@ -85,7 +77,7 @@ export function Sky() {
   return (
     <group>
       <mesh geometry={dome} raycast={() => null}>
-        <meshBasicMaterial vertexColors side={BackSide} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial vertexColors side={BackSide} depthWrite={false} toneMapped={false} fog={false} />
       </mesh>
       <points geometry={stars} raycast={() => null}>
         <pointsMaterial
@@ -95,6 +87,7 @@ export function Sky() {
           transparent
           depthWrite={false}
           toneMapped={false}
+          fog={false}
         />
       </points>
     </group>
@@ -104,21 +97,6 @@ export function Sky() {
 /** Height of the lamps: just under the edge of the roof. */
 const LAMP_HEIGHT = FACADE_HEIGHT + 4.1;
 const LAMP_DEPTH = ROOF_INNER_DEPTH - 0.8;
-
-/** A soft round glow, bright in the middle and gone at the edge. */
-function glowTexture() {
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const context = canvas.getContext("2d")!;
-  const glow = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  glow.addColorStop(0, COLOR.flood50);
-  glow.addColorStop(0.25, `${COLOR.flood50}99`);
-  glow.addColorStop(1, `${COLOR.flood50}00`);
-  context.fillStyle = glow;
-  context.fillRect(0, 0, size, size);
-  return new CanvasTexture(canvas);
-}
 
 /**
  * One bank of lamps over each Block position, all the way round, as on the
@@ -178,6 +156,7 @@ export function Floodlights() {
           blending={AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
+          fog={false}
         />
       </points>
     </group>

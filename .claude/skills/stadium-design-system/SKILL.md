@@ -48,6 +48,15 @@ from `frontend/stadium-site/lib/design/tokens.ts`, which mirrors `globals.css` a
 test that fails if the two drift apart. A hex value written straight into a 3D component
 is the same mistake as one in a class name.
 
+Outside the wall the scene has its own small set: paving, asphalt, foliage, bark, and two
+lights. `scene-lamp` is the only warm light in the picture (street lamps, lit windows,
+food-truck counters), so the plaza reads warm and the stadium, lit in `scene-roof` white,
+stays the bright cool object in the middle. `scene-taillight` is for tail lights and
+tower beacons only. The surroundings are scenery: nothing out there is brighter or more
+saturated than the seats, and the camera cannot go and look at it: it stays on the
+stadium, above the ground and outside every solid thing, and once it has come in close
+it stays over the stadium.
+
 `ok`, `warn` and `danger` are for messages only, never for seats.
 
 ### Honest urgency

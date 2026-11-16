@@ -31,6 +31,15 @@ export const COLOR = {
   sceneKitKeeper: "#b8e34a",
   sceneSkinLight: "#e3b592",
   sceneSkinDark: "#7a4f35",
+
+  scenePaving: "#454c63",
+  scenePavingLight: "#5f6780",
+  sceneAsphalt: "#171b29",
+  sceneFoliage: "#24573a",
+  sceneFoliageLight: "#3b7a45",
+  sceneBark: "#4a3a2e",
+  sceneLamp: "#ffc98a",
+  sceneTaillight: "#ff3a2f",
 } as const;
 
 export type ColorToken = keyof typeof COLOR;
