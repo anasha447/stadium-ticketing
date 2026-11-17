@@ -90,23 +90,23 @@ describe("figures and places", () => {
   });
 
   it("stands everyone about on the plaza until the Draw", () => {
-    expect(arrange(undefined, null, false)).toEqual({ kind: "crowd" });
-    expect(arrange({ phase: "NOT_JOINED", waiting: 3_600 }, null, false)).toEqual({ kind: "crowd" });
+    expect(arrange(undefined, null)).toEqual({ kind: "crowd" });
+    expect(arrange({ phase: "NOT_JOINED", waiting: 3_600 }, null)).toEqual({ kind: "crowd" });
     expect(
-      arrange({ phase: "WAITING", waiting: 3_600, drawAt: "2026-11-17T10:00:00Z" }, null, false),
+      arrange({ phase: "WAITING", waiting: 3_600, drawAt: "2026-11-17T10:00:00Z" }, null),
     ).toEqual({ kind: "crowd" });
   });
 
   it("gives this Fan the figure of the place they drew, the further back the further out", () => {
-    const near = arrange(queued(50, 50), null, false);
-    const far = arrange(queued(3_000, 3_000), null, false);
+    const near = arrange(queued(50, 50), null);
+    const far = arrange(queued(3_000, 3_000), null);
     expect(near).toEqual({ kind: "line", fan: 0, gone: 0 });
     expect(far).toEqual({ kind: "line", fan: 39, gone: 0 });
   });
 
   it("moves the line up as the place counts down, this Fan with it", () => {
-    const start = arrange(queued(1_800), null, false);
-    const later = arrange(queued(900), null, false);
+    const start = arrange(queued(1_800), null);
+    const later = arrange(queued(900), null);
     if (start.kind !== "line" || later.kind !== "line") throw new Error("expected a line");
     expect(later.fan).toBe(start.fan);
     expect(later.gone).toBe(12);
@@ -114,23 +114,20 @@ describe("figures and places", () => {
   });
 
   it("sends the front figures through the gate as Fans ahead are let in", () => {
-    const line = arrange(queued(900), null, false);
+    const line = arrange(queued(900), null);
     expect(figureSpot(0, line).z).toBeLessThan(LINE_FRONT);
     expect(figureSpot(0, line).fz).toBe(-1);
   });
 
-  it("keeps an admitted Fan at the turnstile until they walk in", () => {
+  it("keeps an admitted Fan at the turnstile", () => {
     const admitted: WaitingRoomStatus = {
       phase: "ADMITTED",
       drawnPosition: 1_800,
       admissionExpiresAt: "2026-11-17T10:30:00Z",
     };
-    const waiting = arrange(admitted, 23, false);
-    expect(figureSpot(23, waiting)).toEqual(linePoint(0));
-    const entering = arrange(admitted, 23, true);
-    expect(figureSpot(23, entering)).toEqual(linePoint(-1));
+    expect(figureSpot(23, arrange(admitted, 23))).toEqual(linePoint(0));
     // Arriving already admitted there was no Draw to watch: they are at the front.
-    expect(arrange(admitted, null, false)).toEqual({ kind: "line", fan: 0, gone: 0 });
+    expect(arrange(admitted, null)).toEqual({ kind: "line", fan: 0, gone: 0 });
   });
 });
 

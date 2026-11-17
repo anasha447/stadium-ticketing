@@ -122,13 +122,10 @@ export type Arrangement =
 /**
  * The line for a status. `fan` is the figure this Fan was given at the Draw,
  * if the screen saw one; arriving already admitted, they are at the front.
- * `entering` is true once this Fan, admitted, walks in.
+ * An admitted Fan waits at the turnstile: walking through is the scene's
+ * last move, not a place in the line.
  */
-export function arrange(
-  status: WaitingRoomStatus | undefined,
-  fan: number | null,
-  entering: boolean,
-): Arrangement {
+export function arrange(status: WaitingRoomStatus | undefined, fan: number | null): Arrangement {
   if (status?.phase === "QUEUED") {
     const perFigure = fansPerFigure(status.waiting);
     const mine = slotOf(status.drawnPosition, perFigure);
@@ -136,8 +133,7 @@ export function arrange(
   }
   if (status?.phase === "ADMITTED") {
     const mine = fan ?? 0;
-    // Admitted, this Fan waits at the turnstile until they walk through.
-    return { kind: "line", fan: mine, gone: mine + (entering ? 1 : 0) };
+    return { kind: "line", fan: mine, gone: mine };
   }
   return { kind: "crowd" };
 }
@@ -146,6 +142,25 @@ export function arrange(
 export function figureSpot(index: number, arrangement: Arrangement): Spot {
   if (arrangement.kind === "crowd") return crowdSpot(index);
   return linePoint(index - arrangement.gone);
+}
+
+/** The other figures. This Fan is a figure of their own, so the others are one fewer than the line. */
+export const OTHERS = LINE_FIGURES - 1;
+
+/** Where this Fan walks to when they go in: well down the passage. */
+export const INSIDE: Spot = { x: 0, z: -7, fx: 0, fz: -1 };
+
+/** Where the other figure `k` should be: in the line, everyone but this Fan, in order. */
+export function otherSpot(k: number, arrangement: Arrangement): Spot {
+  if (arrangement.kind === "crowd") return crowdSpot(k);
+  return figureSpot(k < arrangement.fan ? k : k + 1, arrangement);
+}
+
+/** Where this Fan should be. Before the Draw they stand in the crowd like anyone else. */
+export function fanSpot(arrangement: Arrangement, entering: boolean): Spot {
+  if (entering) return INSIDE;
+  if (arrangement.kind === "crowd") return crowdSpot(OTHERS);
+  return figureSpot(arrangement.fan, arrangement);
 }
 
 /** True while a figure at this spot can still be seen: it has not gone far into the gate. */
@@ -170,15 +185,15 @@ type Vec3 = [number, number, number];
 export const GATE_BOX: Vec3[] = [
   [-8.5, 0, 0],
   [8.5, 0, 0],
-  [-8.5, 16, 0],
-  [8.5, 16, 0],
+  [-8.5, 17.6, 0],
+  [8.5, 17.6, 0],
   [-8.5, 0, LINE_FRONT],
   [8.5, 0, LINE_FRONT],
 ];
 
-/** The camera looks from in front, a little to the right and above: about 30° down. */
+/** The camera looks from in front, a little to the right and above: about 25° down. */
 const LOOK_FROM: Vec3 = (() => {
-  const v: Vec3 = [0.5, 0.7, 1];
+  const v: Vec3 = [0.45, 0.52, 1];
   const length = Math.hypot(...v);
   return [v[0] / length, v[1] / length, v[2] / length];
 })();
