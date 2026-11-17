@@ -97,8 +97,13 @@ export function WaitingRoom({ match }: { match: Match }) {
   }, [admitted, drawn, position, waitingCount, fanFigure]);
 
   const board = useMemo(() => boardText(match, reading), [match, reading]);
-  const marker =
-    status?.phase === "QUEUED" ? `Place ${formatCount(status.position)}` : admitted ? "Your turn" : "You";
+  const marker = useMemo(
+    () =>
+      position !== null
+        ? { label: "Place", place: formatCount(position) }
+        : { label: admitted ? "Your turn" : "You" },
+    [position, admitted],
+  );
 
   useEffect(() => {
     if (admitted) router.prefetch(seats);

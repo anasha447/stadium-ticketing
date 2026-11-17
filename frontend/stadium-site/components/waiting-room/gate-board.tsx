@@ -73,18 +73,18 @@ function draw(context: CanvasRenderingContext2D, text: BoardText) {
   context.textAlign = "left";
 
   context.fillStyle = COLOR.flood300;
-  fit(context, text.details.toUpperCase(), (s) => `600 ${s}px ${sans}`, 44, WIDTH - pad * 2);
-  context.fillText(text.details.toUpperCase(), pad, 112);
+  fit(context, text.details.toUpperCase(), (s) => `600 ${s}px ${sans}`, 60, WIDTH - pad * 2);
+  context.fillText(text.details.toUpperCase(), pad, 124);
 
   context.fillStyle = COLOR.flood50;
   fit(context, text.fixture.toUpperCase(), (s) => `800 ${s}px ${display}`, 168, WIDTH - pad * 2);
-  context.fillText(text.fixture.toUpperCase(), pad, 280);
+  context.fillText(text.fixture.toUpperCase(), pad, 292);
 
   // The live line: a label on the left, the number on the right, in the data font.
   context.fillStyle = COLOR.night900;
-  context.fillRect(pad, 336, WIDTH - pad * 2, 3);
+  context.fillRect(pad, 340, WIDTH - pad * 2, 3);
   context.fillStyle = COLOR.flood300;
-  context.font = `600 52px ${sans}`;
+  context.font = `600 68px ${sans}`;
   context.fillText(text.label.toUpperCase(), pad, 470);
   context.fillStyle = COLOR.flood50;
   context.textAlign = "right";

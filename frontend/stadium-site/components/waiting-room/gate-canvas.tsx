@@ -155,7 +155,8 @@ export default function GateCanvas({
   entering: boolean;
   reducedMotion: boolean;
   board: BoardText;
-  marker: string;
+  /** Over this Fan's head: a word, and their place when they have one. */
+  marker: { label: string; place?: string };
   /** Called once, when the camera has gone through the gate after this Fan. */
   onThrough: () => void;
 }) {
@@ -200,7 +201,8 @@ export default function GateCanvas({
         aria-hidden="true"
         className="glass pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded-full border border-state-mine/60 px-3 py-1 text-sm text-flood-50 opacity-0"
       >
-        {marker}
+        {marker.label}
+        {marker.place && <span className="data"> {marker.place}</span>}
       </p>
     </div>
   );
