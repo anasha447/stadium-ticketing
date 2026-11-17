@@ -125,7 +125,7 @@ happens in the stadium view, where none are drawn and the Match stream is busies
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | ✅ | [#28](https://github.com/anasha447/stadium-ticketing/issues/28) | [#29](https://github.com/anasha447/stadium-ticketing/pull/29) |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ✅ | [#34](https://github.com/anasha447/stadium-ticketing/issues/34) | [#35](https://github.com/anasha447/stadium-ticketing/pull/35) |
 | TKT-F405 | The stadium's surroundings, and a camera that stays on the stadium | ✅ | [#37](https://github.com/anasha447/stadium-ticketing/issues/37) | [#38](https://github.com/anasha447/stadium-ticketing/pull/38) |
-| TKT-F406 | The Waiting Room at the gate: a 3D line and the gate board | 🔎 | [#41](https://github.com/anasha447/stadium-ticketing/issues/41) | [#42](https://github.com/anasha447/stadium-ticketing/pull/42) |
+| TKT-F406 | The Waiting Room at the gate: a 3D line and the gate board | ✅ | [#41](https://github.com/anasha447/stadium-ticketing/issues/41) | [#42](https://github.com/anasha447/stadium-ticketing/pull/42) |
 
 **TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
 edge, and a match on the pitch: 22 players, a referee and a ball on a loop. Every sold
