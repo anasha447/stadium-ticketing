@@ -28,10 +28,5 @@ async function Room({ params }: { params: Props["params"] }) {
   // There is no Waiting Room for a Match that is not on sale.
   if (!match || match.status !== "BOOKING_OPEN") notFound();
 
-  return (
-    <WaitingRoom
-      matchId={matchId}
-      fixture={`${match.home.shortName} v ${match.away.shortName}`}
-    />
-  );
+  return <WaitingRoom match={match} />;
 }
