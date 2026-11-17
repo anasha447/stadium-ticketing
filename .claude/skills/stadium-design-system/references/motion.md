@@ -13,7 +13,7 @@ Ordered by impact. Spend effort in this order.
 |---|---|---|---|
 | 1 | **Camera flights** stadium → Block → Seat | camera position and target on one curve, 1.2–1.8s, `ease-in-out` | it is the product: the Fan understands where the seat is because they travelled there |
 | 2 | **Seat view arrival** | camera settles at seated eye height, small overshoot-free ease, pitch in frame | "this is what I will see" is the moment the decision is made |
-| 3 | **Waiting Room / Draw** | the Fan's marker moving through the crowd, position counting down in the data font | turns waiting into visible progress; the Draw must look fair, so everyone shuffles at once, then order is revealed |
+| 3 | **Waiting Room / Draw** | outside the gate, the crowd walks at once into one line; the line steps up as Fans go in; the Fan's place counts down over their head in the data font; let in, they walk through, the camera follows and the screen flares into the stadium | turns waiting into visible progress; the Draw must look fair, so everyone moves at once, then order is revealed |
 | 4 | **Hold created** | selected seats lock (outline closes), countdown ring starts, Quote lines appear one by one, total last | confirms the seats are theirs and shows the price is now fixed |
 | 5 | **Live seat changes** | a seat taken by someone else pulses amber once, then settles; a sold seat gets its fan | proves the map is live without shouting |
 | 6 | **Mosaic → State** on entering a Block | seat colours cross-fade over 300ms, staggered outward from the clicked point | explains the colour change instead of surprising with it |
@@ -46,7 +46,8 @@ With `prefers-reduced-motion: reduce`:
   leaves alone),
 - auto-rotation and the live match are off by default (a button turns them on),
 - the pulse is dropped; a held seat still reads as held because it is drawn smaller,
-- the Draw shows the final order without the shuffle.
+- the Draw shows the final order without the shuffle: figures are put in their places,
+  and admission is a short fade from the night colour instead of the walk and the flare.
 
 The experience must be complete this way, not degraded: every state still reads.
 

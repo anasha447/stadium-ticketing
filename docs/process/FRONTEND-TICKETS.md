@@ -13,6 +13,9 @@ F401 → F402 → F403 → F303 → F304 → F404.
 **F405 was added on 15 Nov 2026** (Anas), after the track had closed: one more step for
 the stadium view, the world around the stadium.
 
+**F406 was added on 17 Nov 2026** (Anas), before the backend starts: the Waiting Room
+becomes a 3D line outside one of those gates.
+
 ## Sprint F1 — Foundation
 
 | Ticket | Title | Status | Issue | PR |
@@ -122,6 +125,7 @@ happens in the stadium view, where none are drawn and the Match stream is busies
 | TKT-F403 | Touch, phone layout, reduced motion, keyboard path through the mini-map | ✅ | [#28](https://github.com/anasha447/stadium-ticketing/issues/28) | [#29](https://github.com/anasha447/stadium-ticketing/pull/29) |
 | TKT-F404 | `impeccable` audit, `ui-taste` review, performance pass | ✅ | [#34](https://github.com/anasha447/stadium-ticketing/issues/34) | [#35](https://github.com/anasha447/stadium-ticketing/pull/35) |
 | TKT-F405 | The stadium's surroundings, and a camera that stays on the stadium | ✅ | [#37](https://github.com/anasha447/stadium-ticketing/issues/37) | [#38](https://github.com/anasha447/stadium-ticketing/pull/38) |
+| TKT-F406 | The Waiting Room at the gate: a 3D line and the gate board | ✅ | [#41](https://github.com/anasha447/stadium-ticketing/issues/41) | [#42](https://github.com/anasha447/stadium-ticketing/pull/42) |
 
 **TKT-F401 — Atmosphere.** A dark sky with stars, banks of floodlights under the roof
 edge, and a match on the pitch: 22 players, a referee and a ball on a loop. Every sold
@@ -171,6 +175,28 @@ outside, zoom out first. Flights arc over the roof instead of going through it. 
 the bowl, below the top of the wall, the street level is not drawn, so a Block and a
 seat cost what they did before.
 
+**TKT-F406 — The Waiting Room at the gate.** The field of dots is gone. The Waiting
+Room is now the plaza outside one gate at night: the outer wall with its ribs and
+uplights, the gate with six turnstiles, warm light from the passage spilling onto the
+paving, and six street lamps. Before the Draw the Fans stand about on the plaza; at the
+Draw they all walk at once into one line that winds out from the middle turnstile, so
+nobody keeps the place they arrived in. The line is 48 figures, each standing for the
+same share of the Waiting Room (75 Fans of 3,600), so a Fan who drew a late place
+starts far out and one who drew an early place starts near the gate. This Fan wears the
+"yours" colour, with a ring on the ground, a glow, a light from above, and their place
+over their head in the data font. As the place counts down the line steps up, and the
+Fans at the front walk through the turnstiles and fade into the light. A raised camera
+keeps the gate and this Fan in frame and comes closer as they near the turnstiles. Over
+the gate an LED board shows the fixture, the competition and kickoff, and a live line:
+Fans waiting, the Draw countdown, then Fans admitted (everyone ahead of this Fan, since
+admission goes in Draw order). Let in while watching, the Fan walks through, the camera
+follows them into the passage, the screen flares and the stadium view opens. Arriving
+already let in, they wait at the turnstile until they press "Enter the stadium". With
+reduced motion nobody walks: figures are put in place, and admission is a short fade.
+The glow is drawn with additive light shapes rather than a bloom pass, so no new
+package. The line's maths is in `lib/waiting-room/line.ts` and `walk.ts`, with tests;
+the low-poly fan is shared with the stadium's surroundings.
+
 ## Carried forward
 
 Things noticed along the way that no ticket has closed yet. Each names the ticket that
@@ -205,7 +231,11 @@ should pick it up.
 | Dragging during a camera flight waits for the landing | F203 | later, if it feels wrong in use |
 | The roof is a short, see-through ring; the plan is a rounded rectangle, not the real oval | F201 | F401, if wanted |
 | The view score is a home-made formula | F204 | backend, if it ever supplies one |
-| The Draw animation has only been seen at 1 frame per second (the preview pane throttles it) | F301 | a check on a real device |
+| The Draw animation has only been seen at 1 frame per second (the preview pane throttles it) | F301 | replaced by F406 |
+| The gate scene was seen at about one frame a second: the Draw walk, the line stepping up, the walk through the turnstiles, the camera push and the flare were not seen at full speed. The line formed and the hand-off to the stadium worked | F406 | a check on a real device |
+| With reduced motion the line jumps into place and admission is a fade; coded, not seen with the setting on | F406 | a check on a real device |
+| The gate scene has no fallback picture without WebGL; the Fan is still taken in after 7 seconds once let in. The stadium view has the same gap | F406 | later, if wanted |
+| The glow round the Fan and the board is drawn, not a real bloom pass. If it looks flat on a real screen, `@react-three/postprocessing` is the next step | F406 | later, if it looks flat |
 | The demo crowd is 3,600 Fans so the longest wait is 18 seconds; the Registration Window before booking opens is not shown | F301 | the backend tickets |
 
 ## Backend work this track has created

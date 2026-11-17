@@ -40,7 +40,7 @@ const PAVING_TILE = 8;
 const LANE_TILE = 12;
 
 /** Big square slabs, every other one a shade lighter, with dark joints. */
-function pavingTexture() {
+export function pavingTexture() {
   const texture = drawn(256, 256, (context) => {
     context.fillStyle = COLOR.scenePaving;
     context.fillRect(0, 0, 256, 256);
