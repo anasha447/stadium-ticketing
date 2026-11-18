@@ -4,6 +4,24 @@ One short section per ticket, newest first: what I did and what I learned.
 
 ---
 
+## TKT-102 — CI on every pull request · Nov 18, 2026
+
+**What I did**
+- Added `.github/workflows/ci.yml`: every PR and every push to `main` runs `./mvnw -B verify` on Java 21 on a fresh Linux machine
+- Made `mvnw` executable in git (`100644` → `100755`) before the first run, so it didn't die with "Permission denied"
+- Broke `HealthEndpointTest` on purpose and watched the check go red with the same assertion I saw locally, then reverted it
+- Made the repo public and added a ruleset: `main` now needs a PR and a green `build` check
+
+**What I learned**
+- **There's no "turn on Actions" button** — the YAML file in `.github/workflows/` is the setup. GitHub reads it on every event.
+- **A PR build is a build of the merge** — `pull_request` checks out my branch merged into today's `main`, not my branch tip.
+- **Windows hides file modes** — git stores the executable bit, and Linux needs it. `git update-index --chmod=+x` changes only the mode; the blob hash stays the same.
+- **The cache is per branch** — my PR's second run restored it (22 s → 14 s of Maven), but the first run on `main` missed and saved its own.
+- **A check reports, a ruleset enforces** — and the ruleset picks the check by job id (`build`), not the workflow name.
+- **Merge is the last step** — I merged before the review and the close step, so the notes went in a follow-up PR. Green CI doesn't mean the work was reviewed.
+
+---
+
 ## TKT-101 — Walking skeleton: root POM + inventory · Nov 13, 2026
 
 **What I did**

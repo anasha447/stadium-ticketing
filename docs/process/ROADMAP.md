@@ -78,7 +78,7 @@ never squeeze two sprints into one.
 |---|---|---|
 | TKT-100 | Repository baseline ✅ | 0 |
 | TKT-101 | Walking skeleton: root POM + `inventory` (Web, Actuator) ✅ | 3 |
-| TKT-102 | CI on every pull request | 2 |
+| TKT-102 | CI on every pull request ✅ | 2 |
 | TKT-103 | Postgres + Seat Map schema + overselling backstop | 5 |
 | TKT-104 | Seat Map Generator — 120 Blocks, 60,560 Seats, idempotent | 5 |
 | TKT-105 | Seat Map REST API | 3 |
