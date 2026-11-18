@@ -10,8 +10,8 @@
 | Rank | Ticket | Issue | Title | Pts | Depends on |
 |---|---|---|---|---|---|
 | 0 | TKT-100 | — | Repository baseline ✅ | 0 | — |
-| 1 | TKT-101 | — | Walking skeleton: root POM + `inventory` (Web, Actuator) | 3 | TKT-100 |
-| 2 | TKT-102 | [#43](https://github.com/anasha447/stadium-ticketing/issues/43) | CI on every pull request | 2 | TKT-101 |
+| 1 | TKT-101 | — | Walking skeleton: root POM + `inventory` (Web, Actuator) ✅ | 3 | TKT-100 |
+| 2 | TKT-102 | [#43](https://github.com/anasha447/stadium-ticketing/issues/43) | CI on every pull request ✅ | 2 | TKT-101 |
 | 3 | TKT-103 | — | Postgres + Seat Map schema + overselling backstop | 5 | TKT-102 |
 | 4 | TKT-104 | — | Seat Map Generator — 120 Blocks, 60,560 Seats, idempotent | 5 | TKT-103 |
 | 5 | TKT-105 | — | Seat Map REST API | 3 | TKT-104 |
@@ -71,7 +71,9 @@ what `@SpringBootApplication` really is · how auto-configuration decides · Act
 
 ---
 
-## TKT-102 — CI on every pull request
+## TKT-102 — CI on every pull request ✅
+
+Done 2026-11-18 in PR [#44](https://github.com/anasha447/stadium-ticketing/pull/44): `.github/workflows/ci.yml` runs `./mvnw -B verify` on Java 21 for every PR and push to `main`; red seen once on purpose; Maven cache restored on later runs; repo made public and `main` protected by a ruleset requiring the `build` check.
 
 **Goal** — Every pull request and every push to `main` runs the full build and test suite
 on GitHub, and `main` cannot receive a red change.
