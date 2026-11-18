@@ -65,6 +65,8 @@ function md(src) {
       for (i++; i < lines.length && !/^```/.test(lines[i]); i++) body.push(lines[i]);
       const lang = fence[1] || "text";
       if (lang === "quiz") { out += quiz(body); continue; }
+      // Mermaid source stays as text; the page draws it when the lesson is shown.
+      if (lang === "mermaid") { out += `<div class="diagram"><pre class="mermaid">${esc(body.join("\n"))}</pre></div>\n`; continue; }
       out += `<div class="code"><span class="lang">${esc(lang)}</span><button class="copy" type="button">Copy</button><pre><code>${esc(body.join("\n"))}</code></pre></div>\n`;
       continue;
     }
@@ -83,7 +85,9 @@ function md(src) {
     if (/^>\s?/.test(line)) {
       flush(); const q = [];
       for (; i < lines.length && /^>\s?/.test(lines[i]); i++) q.push(lines[i].replace(/^>\s?/, ""));
-      i--; out += `<blockquote>${md(q.join("\n"))}</blockquote>\n`; continue;
+      // "> ⚠️ …" is a warning box, "> ✅ …" an expected-outcome box.
+      const kind = /^\s*⚠/.test(q[0]) ? ' class="warn"' : /^\s*✅/.test(q[0]) ? ' class="ok"' : "";
+      i--; out += `<blockquote${kind}>${md(q.join("\n"))}</blockquote>\n`; continue;
     }
     if (isListLine(line)) {
       flush(); const block = [];
@@ -127,10 +131,15 @@ const lessons = existsSync(lessonsDir)
       const [meta, body] = frontMatter(readFileSync(join(lessonsDir, f), "utf8").replace(/\r\n/g, "\n"));
       const id = f.replace(/\.md$/, "");          // TKT-104 or TKT-104-1 (one lesson per slice for big tickets)
       const ticket = meta.ticket || id;
-      // concepts = ### headings inside "## Under the hood"
+      // concepts = the headings one level below "Under the hood" (## in older lessons, ### inside Part 1)
       const concepts = [];
-      const under = body.split(/^## /m).find((s) => s.startsWith("Under the hood"));
-      if (under) for (const m of under.matchAll(/^### (.+)$/gm)) concepts.push({ name: m[1].replace(/[`*]/g, ""), anchor: slug(m[1]) });
+      let level = 0;
+      for (const m of body.matchAll(/^(#{2,4}) (.+)$/gm)) {
+        const n = m[1].length;
+        if (/^Under the hood/.test(m[2])) { level = n; continue; }
+        if (level && n <= level) level = 0;
+        else if (level && n === level + 1) concepts.push({ name: m[2].replace(/[`*]/g, ""), anchor: slug(m[2]) });
+      }
       quizSink = [];
       const html = md(body);
       const quizzes = quizSink.map((q) => ({ ...q, question: q.question, lesson: id }));

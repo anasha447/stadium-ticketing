@@ -4,9 +4,9 @@ One file for the whole way of working: the Scrum frame, the ticket loop (how Cla
 teaches and how Anas builds), testing, git, review, and which skill is used when.
 
 **Roles.** Anas is Developer and Product Owner and **writes all the code**. Claude is
-Scrum Master, mentor and reviewer: it writes the lesson pages, reviews, corrects, and
-says when and what to commit, but never hands over a finished class, a whole `pom.xml`
-or git commands to copy.
+Scrum Master, mentor and reviewer: it writes the lesson pages, reviews and corrects.
+The lesson spells out each step, its git commands and its commit message (Anas runs them
+himself). It never hands over a finished class or a whole `pom.xml`.
 
 ---
 
@@ -41,18 +41,40 @@ Anas says: **"Start TKT-###."** Claude then:
 3. Checks the facts against `docs/learning/RESOURCES.md` (official docs first — never
    memory alone, especially for Boot 4.1), then writes the **lesson** in
    `docs/learning/lessons/TKT-###.md` and rebuilds the site
-   (`node docs/learning/build.mjs`). The lesson has a fixed shape:
+   (`node docs/learning/build.mjs`). The lesson has a fixed **two-part shape** (adopted
+   2026-11-17, first used in TKT-102). The aim: less to hold in your head, more doing,
+   and nothing you need hidden at the bottom of the page.
+
+   **Part 1 — The Concept** (`## Part 1 — The Concept`, sections as `###`)
 
    | Section | What it holds |
    |---|---|
    | front matter `source:` | the **one primary source** to read for this ticket (shown at the top of the page) |
-   | **The story** | the ticket in plain words, where it sits in the system, what "done" looks like |
+   | **The story** | the ticket in plain words, where it sits in the system, a "Done looks like" checklist |
+   | **The big picture** | one diagram of how the parts talk or how data flows (Mermaid) |
    | **Ways to build it** | 2–3 real options with their trade-offs |
    | **What we chose and why** | the choice, the rejected options, and when they *would* win |
-   | **Under the hood** | **at most 4** new annotations, APIs or concepts: what it is, what Spring / Redis / Kafka does behind the scenes, defaults that bite, the trap, the Boot 4 difference — each ending with a **Source:** link |
-   | **Your mission** | the vertical slices in order — for each: the behaviour, the seam, the test idea (Given/When/Then), what "red" should look like |
-   | **Hints** | per slice, collapsed, climbing the hint ladder (§1.1) — never the full solution |
-   | **Check yourself** | 3–5 ` ```quiz ` questions with instant feedback (format below) |
+   | **Under the hood** | **at most 4** concepts as `####`: what it is, what Spring / Redis / Kafka does behind the scenes, defaults that bite, the Boot 4 difference — each ending with a **Source:** link |
+
+   **Part 2 — The Implementation** (`## Part 2 — The Implementation`)
+
+   | Element | Rule |
+   |---|---|
+   | **The seam** | what it catches and what it misses, then a table of how the test/check state moves commit by commit |
+   | **Before you start** | where Anas is (branch, uncommitted files) with the command to check it |
+   | **Slices → numbered steps** | `### Slice N`, then `#### Step N — …`; steps are numbered across the whole lesson |
+   | **Code in the step** | starter code, skeletons, config and terminal commands go in the step that needs them, never in a hints section |
+   | **File tree** | whenever a file or folder is created, a tree from the repo root with `← new` marks |
+   | **⚠️ Warning blocks** | `> ⚠️ **Warning — …**` for environment traps (Windows vs Linux, caches, indentation), placed **before** the step where the mistake happens |
+   | **✅ Expected blocks** | `> ✅ **Expected**` with the exact output of success (log lines, terminal output, what the UI shows); for a red, the exact failure message |
+   | **Explicit commits** | every commit says when, which files (`git add` by name), and the exact message: `git commit -m "type(scope): subject"` |
+   | **Diagrams** | Mermaid (` ```mermaid `) or ASCII (` ```text `) wherever data structures, queues, keys, state or messages move: how it is laid out in memory and how it changes |
+   | **If it goes wrong** | a short table: what you see, where, what it means |
+
+   Then **Check yourself**: 3–5 ` ```quiz ` questions with instant feedback (format below).
+
+   Strict TDD still holds: the steps give the test shape and the expected red, and Anas
+   writes the logic that turns it green. A finished domain class is never in the lesson.
 
    **Short lessons:** one tangible win each. If a ticket needs more than 4 new concepts
    (typically an 8-point ticket), it gets **one lesson per slice**:
@@ -71,9 +93,9 @@ Anas says: **"Start TKT-###."** Claude then:
    ```
    ````
 
-4. Asks Anas to create the branch (Anas types it; Claude checks the name).
+4. Points Anas at the lesson's first step (creating the branch); Claude checks the name.
 
-Anas reads the lesson and **tries the first slice on his own** before asking.
+Anas reads Part 1, then works through Part 2 step by step.
 
 ### Phase 3 — Build, one vertical slice at a time (Anas, Claude reviewing)
 
@@ -85,7 +107,7 @@ For each slice in "Your mission":
 | Check | Claude | confirms it fails **for the expected reason** (an assertion or missing behaviour — not a typo or a wrong import) |
 | 🟢 Green | Anas | writes the minimum code to pass; runs the test |
 | Review | Claude | short review with labels (§6); corrections if needed |
-| Commit | Claude → Anas | Claude says **"commit now"** and **what belongs in it** (which files, which change, `type(scope)`); Anas writes the message; Claude reviews it |
+| Commit | Anas | runs the commit the lesson step gives (files and message); Claude checks it landed as written |
 
 Rules:
 - No production code before its test has been run red. If code comes first, Claude
@@ -109,7 +131,8 @@ Claude climbs **one rung at a time** and waits:
 4. **Partial** — the tricky 3–5 lines with blanks.
 5. **Full** — only if rung 4 fails or Anas asks; Anas re-types it and explains each line.
 
-The same ladder applies to git: rung 1 is "which git concept is this?", never the command.
+The ladder is for the logic Anas writes. Git commands, config and starter code are
+not laddered: they are in the lesson step already.
 
 #### 1.2 Debugging protocol
 
@@ -213,13 +236,14 @@ classes and commit plans belong in the lesson page, decided at kickoff.
 
 ## 4. Git — Anas drives
 
-Claude names the step; Anas types the commands; Claude checks the result.
+The lesson gives each git step with its exact commands and commit message; Anas runs
+them; Claude checks the result.
 
-| Step | Claude says | Claude checks |
+| Step | The lesson gives | Claude checks |
 |---|---|---|
-| Start | "Create the branch for TKT-### from an up-to-date `main`." | `feature/TKT-###-slug` (or `fix/` `chore/` `docs/`); based on latest `main` |
-| Slice green | "Commit now: <files>, <change>, type `feat(inventory)`." | one logical change; message format; no stray files |
-| Push | "Push and open the PR with the template; `Closes #N`." | title `TKT-###: <title>`; template filled; CI started |
+| Start | `git switch -c feature/TKT-###-slug` from an up-to-date `main` | `feature/TKT-###-slug` (or `fix/` `chore/` `docs/`); based on latest `main` |
+| Slice green | `git add <files by name>` and `git commit -m "type(scope): subject"` | one logical change; no stray files |
+| Push | `git push` and `gh pr create` with `Closes #N` | title `TKT-###: <title>`; template filled; CI started |
 | Merge | "Approved — merge and clean up." | merge commit on `main`; branch deleted locally and on GitHub |
 
 **Conventional Commits:** `type(scope): subject` — imperative, lower case, no period,

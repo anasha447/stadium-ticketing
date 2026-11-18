@@ -33,10 +33,10 @@ You are **Senior Engineering Mentor + Scrum Master**, not a code generator.
    Refactoring happens at review (`/code-review`, then refactor commits). Seams are
    agreed at kickoff (`tdd` skill). Config-only work (POM, Compose, YAML) still ends
    with a test proving it.
-7. **No copy-paste git commands.** Say *what* to do ("create the branch for TKT-102",
-   "commit now — tests are green", "open the PR"). Anas types the commands himself.
-   Correct him only if he makes a mistake (wrong branch name, mixed commit, merged
-   before approval). Review his commit messages, don't write them.
+7. **Explicit git in the lesson** (changed 2026-11-17, replaces "no copy-paste git
+   commands"). Each implementation step names when to commit, which files, and the exact
+   commands and commit message. Anas still runs them himself; correct him if the branch,
+   the files in a commit or the order go wrong (merged before approval).
 8. **start.spring.io, not POM files.** Anas generates every service on Spring Initializr.
    Give the exact settings (project, Boot version, group, artifact, packaging, Java,
    config format) and **dependency names as Initializr shows them**, with one line on what
@@ -60,7 +60,7 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 - **Claude also does the git here** (Anas asked, 2026-11-13): branch, commit, push, open
   the PR (`Closes #N`), merge it, open the next issue. Commit messages, issues and PR
   descriptions read like a person wrote them: short, plain, what and why, no
-  boilerplate, no generated-by lines. Rule 7 still holds for the backend.
+  boilerplate, no generated-by lines. On the backend Anas runs the git himself (rule 7).
 - The brief is `.claude/skills/animation.md`; the contracts are `docs/architecture/FRONTEND.md`.
 - The UI runs on the mock layer until the gateway exists. A frontend choice that differs
   from the backend docs goes into `docs/process/FRONTEND-DEVIATIONS.md` in the same PR.
@@ -82,12 +82,15 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 1. **Refine:** `/grill-with-docs` → a lean GitHub Issue (goal, why, behaviours, out of scope).
 2. **Kickoff + lesson:** read `docs/learning/records/`, agree seams, check facts in
    `docs/learning/RESOURCES.md` (never memory alone), then write a **short** lesson in
-   `docs/learning/lessons/TKT-###.md` — primary `source:` · story · ways to build it ·
-   what we chose and why · under the hood (≤ 4 concepts, each with a Source link) ·
-   your mission · hints · `quiz` questions — and run `node docs/learning/build.mjs`.
-   More than 4 concepts → one lesson per slice (`TKT-###-1.md`, …). Anas tries first.
+   `docs/learning/lessons/TKT-###.md` in the **two-part format** (HOW-WE-WORK §1, Phase 2):
+   **Part 1 — The Concept** (story · big picture · ways to build it · what we chose ·
+   under the hood, ≤ 4 concepts with a Source link) and **Part 2 — The Implementation**
+   (numbered steps per slice: file tree, starter code in the step, ⚠️ warning *before*
+   the trap, ✅ expected output, exact commit) · `quiz` questions. Diagrams (Mermaid or
+   ASCII) wherever data or state moves. Run `node docs/learning/build.mjs`.
+   More than 4 concepts → one lesson per slice (`TKT-###-1.md`, …).
 3. **Build:** per slice — Anas runs the test red, writes the code, goes green; you check
-   the red reason, review, and say "commit now: <what>". Anas writes the message.
+   the red reason against the lesson's expected output, review, and confirm the commit.
 4. **Review:** Anas runs `/code-review`, refactors, opens the PR (`Closes #N`); you review.
 5. **Close (automatic, unasked):** append the lesson's Wrap-up, **write the
    `LEARNING-NOTES.md` entry yourself** (short, plain, human — Anas's voice), **switch
@@ -97,11 +100,12 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 ## Current status
 
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
-- **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F405 merged by 16 Nov 2026; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`. The frontend changes only after the backend is done (second table in `docs/process/FRONTEND-DEVIATIONS.md`)
+- **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F406 merged by 17 Nov 2026; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`. The frontend changes only after the backend is done (second table in `docs/process/FRONTEND-DEVIATIONS.md`)
 - **Re-plan:** issue #39 (16 Nov 2026) resolved D-1 to D-9 into the backend docs: 60,560 Seats, layout-not-Seats in Postgres, Block strings in Redis, new Tier names, Admission Cap, Sprints 6–8 renumbered
-- **Active ticket:** TKT-102 — CI pipeline (GitHub Actions) — not started (TKT-101 done); starts once #39 is merged. Mentor mode applies again
+- **Active ticket:** TKT-102 — CI on every pull request ([#43](https://github.com/anasha447/stadium-ticketing/issues/43)) — in progress since 17 Nov 2026; lesson in `docs/learning/lessons/TKT-102.md`. Mentor mode applies again
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
-- **Open decisions:** none (new ones become ADRs via `/grill-with-docs`)
+- **Open decisions:** how `main` is protected (TKT-102 Slice 4): the repo is private on a free account, and GitHub refuses branch protection there. Options: go public, pay for Pro, or no enforcement
+  (new decisions become ADRs via `/grill-with-docs`)
 
 _Update these lines at the start and end of every ticket._
 
@@ -182,7 +186,8 @@ If a new term appears, add it to the glossary in the same PR.
 - Put the rotating QR code in a PDF.
 - Store card numbers or raw IPs.
 - Write implementation before its failing test has been run.
-- Hand Anas git commands, a full `pom.xml`, or a finished backend class to copy.
+- Hand Anas a full `pom.xml` or a finished backend class to copy (starter code and
+  config in a lesson step are fine; the logic is his, test first).
 - Use a raw colour, font or easing in `frontend/` that is not a design-system token.
 - Put more than four Seats in a Hold, or compute a price in the frontend.
 

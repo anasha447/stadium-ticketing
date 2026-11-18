@@ -75,6 +75,11 @@ th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--bor
 th { background: var(--surface-2); font-weight: 600; }
 blockquote { margin: 14px 0; padding: 10px 16px; background: var(--surface-2); border-radius: 10px; }
 blockquote p { margin: 4px 0; }
+blockquote.warn { border-left: 4px solid #d97706; background: color-mix(in srgb, #d97706 10%, var(--surface-2)); }
+blockquote.ok { border-left: 4px solid var(--ok); background: color-mix(in srgb, var(--ok) 8%, var(--surface-2)); }
+blockquote .code { margin: 10px 0 6px; }
+.diagram { margin: 16px 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; background: none; text-align: center; font-size: 14px; }
 details { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; background: var(--surface-2); }
 details[open] { background: var(--surface); }
 summary { cursor: pointer; font-weight: 600; }
@@ -265,6 +270,7 @@ function route(hash) {
   const el = anchor && document.getElementById(anchor);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); else window.scrollTo(0, 0);
   store.set("last", target.id);
+  window.drawDiagrams?.();
 }
 window.addEventListener("hashchange", () => route());
 document.addEventListener("click", e => {
@@ -344,6 +350,20 @@ results.addEventListener("click", () => { results.hidden = true; q.value = ""; }
 document.addEventListener("keydown", e => { if (e.key === "Escape") results.hidden = true; if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); } });
 
 $("#built").textContent = `Built ${DATA.built} · rebuild with: node docs/learning/build.mjs`;
+</script>
+<script type="module">
+// Diagrams: ```mermaid blocks in a lesson. Mermaid needs the network; offline the source text shows instead.
+// A hidden lesson has no size, so only the lesson on screen is drawn, the first time it is shown.
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+const dark = document.documentElement.dataset.theme
+  ? document.documentElement.dataset.theme === "dark"
+  : matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", fontFamily: "system-ui, sans-serif" });
+window.drawDiagrams = () => {
+  const nodes = [...document.querySelectorAll(".lesson:not([hidden]) pre.mermaid:not([data-processed])")];
+  if (nodes.length) mermaid.run({ nodes }).catch((e) => console.warn("diagram:", e));
+};
+window.drawDiagrams();
 </script>
 </body>
 </html>
