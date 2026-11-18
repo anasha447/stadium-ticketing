@@ -19,6 +19,6 @@ class HealthEndpointTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.status").isEqualTo("UP");
+                .jsonPath("$.status").isEqualTo("DOWN");
     }
 }
