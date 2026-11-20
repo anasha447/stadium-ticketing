@@ -2,9 +2,9 @@ package com.stadium.inventory;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 
-@ImportTestcontainers
+@Import(TestcontainersConfiguration.class)
 @SpringBootTest
 class InventoryApplicationTests {
 
