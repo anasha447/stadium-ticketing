@@ -129,7 +129,9 @@ CREATE TABLE blocks (
     tier       VARCHAR(16) NOT NULL
                CHECK (tier IN ('CLUB_PREMIUM','VIP_1','VIP_2','STANDARD')),
     row_seats  INT[]       NOT NULL              -- seats per Row, front Row first
-               CHECK (cardinality(row_seats) > 0 AND 0 < ALL (row_seats)),
+               CHECK (cardinality(row_seats) > 0
+                      AND array_position(row_seats, NULL) IS NULL   -- no Row without a number
+                      AND 0 < ALL (row_seats)),
     PRIMARY KEY (match_id, block_id),
     UNIQUE (match_id, level, position)
 );
