@@ -12,7 +12,7 @@
 | 0 | TKT-100 | — | Repository baseline ✅ | 0 | — |
 | 1 | TKT-101 | — | Walking skeleton: root POM + `inventory` (Web, Actuator) ✅ | 3 | TKT-100 |
 | 2 | TKT-102 | [#43](https://github.com/anasha447/stadium-ticketing/issues/43) | CI on every pull request ✅ | 2 | TKT-101 |
-| 3 | TKT-103 | — | Postgres + Seat Map schema + overselling backstop | 5 | TKT-102 |
+| 3 | TKT-103 | [#46](https://github.com/anasha447/stadium-ticketing/issues/46) | Postgres + Seat Map schema + overselling backstop | 5 | TKT-102 |
 | 4 | TKT-104 | — | Seat Map Generator — 120 Blocks, 60,560 Seats, idempotent | 5 | TKT-103 |
 | 5 | TKT-105 | — | Seat Map REST API | 3 | TKT-104 |
 | 6 | TKT-106 | — | Redis Seat States + Warmup + Occupancy | 5 | TKT-104 |

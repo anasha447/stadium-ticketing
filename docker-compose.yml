@@ -1,0 +1,21 @@
+name: stadium
+
+services:
+  postgres:
+    image: postgres:18.7-alpine3.23
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: stadium
+      POSTGRES_PASSWORD: stadium
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stadium -d inventory_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
