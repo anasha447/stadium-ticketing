@@ -2,18 +2,22 @@
 CREATE TABLE seat_maps (
     match_id        BIGINT      PRIMARY KEY,
     layout_version  VARCHAR(32) NOT NULL,
-    seat_count      INT         NOT NULL,
+    seat_count      INT         NOT NULL CHECK (seat_count > 0),
     generated_at    TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE blocks (
     match_id   BIGINT      NOT NULL REFERENCES seat_maps(match_id),
     block_id   VARCHAR(3)  NOT NULL,
-    level      VARCHAR(8)  NOT NULL,
-    position   SMALLINT    NOT NULL,
-    side       VARCHAR(8)  NOT NULL,
-    tier       VARCHAR(16) NOT NULL,
-    row_seats  INT[]       NOT NULL,
+    level      VARCHAR(8)  NOT NULL CHECK (level IN ('LOWER','CLUB','UPPER')),
+    position   SMALLINT    NOT NULL CHECK (position BETWEEN 0 AND 39),
+    side       VARCHAR(8)  NOT NULL CHECK (side IN ('WEST','NORTH','EAST','SOUTH')),
+    tier       VARCHAR(16) NOT NULL
+               CHECK (tier IN ('CLUB_PREMIUM','VIP_1','VIP_2','STANDARD')),
+    row_seats  INT[]       NOT NULL
+               CHECK (cardinality(row_seats) > 0
+                      AND array_position(row_seats, NULL) IS NULL   -- no Row without a number
+                      AND 0 < ALL (row_seats)),
     PRIMARY KEY (match_id, block_id),
     UNIQUE (match_id, level, position)
 );
