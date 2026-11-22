@@ -31,6 +31,8 @@ CREATE TABLE seat_claims (
     order_id    UUID        NOT NULL,
     hold_id     UUID        NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
 
+);
+ CREATE UNIQUE INDEX uniq_sold_seat ON seat_claims (match_id, seat_id)
+           WHERE status = 'SOLD';
 -- Deliberately no seats table (ADR-0007) and no holds table: Holds are Redis-only (ADR-0001).

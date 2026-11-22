@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 @JdbcTest
@@ -90,5 +91,37 @@ class SeatMapSchemaTest {
                 """).update())
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("seat_maps_seat_count_check");
+    }
+    @Test
+    void rejectsASecondSoldClaimForTheSameSeat() {
+        block214();
+        aClaim(1, "214", "214-R07-12", "SOLD");
+
+        assertThatThrownBy(() -> aClaim(1, "214", "214-R07-12", "SOLD"))
+                .isInstanceOf(DuplicateKeyException.class)
+                .isInstanceOf(DuplicateKeyException.class)
+                .hasMessageContaining("uniq_sold_seat");
+    }
+    @Test
+    void acceptsASoldClaimAfterACancelledOne() {
+        block214();
+        aClaim(1, "214", "214-R07-12", "CANCELLED");
+
+        aClaim(1, "214", "214-R07-12", "SOLD");
+
+        assertThat(jdbc.sql("SELECT count(*) FROM seat_claims WHERE seat_id = '214-R07-12'")
+                .query(Long.class).single()).isEqualTo(2);
+
+
+    }
+
+    @Test
+    void acceptsSoldClaimsForDifferentSeats() {
+        block214();
+        aClaim(1, "214", "214-R07-12", "SOLD");
+        aClaim(1, "214", "214-R07-13", "SOLD");
+        aClaim(1, "214", "214-R08-12", "SOLD");
+
+        assertThat(jdbc.sql("SELECT count(*) FROM seat_claims").query(Long.class).single()).isEqualTo(3);
     }
 }
