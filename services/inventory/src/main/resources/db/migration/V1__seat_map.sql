@@ -27,12 +27,16 @@ CREATE TABLE seat_claims (
     match_id    BIGINT      NOT NULL,
     seat_id     VARCHAR(16) NOT NULL,
     block_id    VARCHAR(3)  NOT NULL,
-    status      VARCHAR(16) NOT NULL,
+    status      VARCHAR(16) NOT NULL CHECK (status IN ('SOLD','CANCELLED')),
     order_id    UUID        NOT NULL,
     hold_id     UUID        NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+     FOREIGN KEY (match_id, block_id) REFERENCES blocks(match_id, block_id),
+        -- the Seat id names its own Block; whether Row and number fit is checked in Java
+        CHECK (seat_id ~ ('^' || block_id || '-R[0-9]{2}-[0-9]{1,2}$'))
 
 );
  CREATE UNIQUE INDEX uniq_sold_seat ON seat_claims (match_id, seat_id)
            WHERE status = 'SOLD';
--- Deliberately no seats table (ADR-0007) and no holds table: Holds are Redis-only (ADR-0001).
+
+   -- Deliberately no seats table (ADR-0007) and no holds table: Holds are Redis-only (ADR-0001).

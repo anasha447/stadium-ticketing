@@ -124,4 +124,30 @@ class SeatMapSchemaTest {
 
         assertThat(jdbc.sql("SELECT count(*) FROM seat_claims").query(Long.class).single()).isEqualTo(3);
     }
+    @Test
+    void rejectsAClaimWhoseSeatIdNamesAnotherBlock() {
+        block214();
+
+        assertThatThrownBy(() -> aClaim(1, "214", "215-R07-12", "SOLD"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("seat_claims_check");
+    }
+
+    @Test
+    void rejectsAClaimForABlockThatDoesNotExist() {
+        block214();
+
+        assertThatThrownBy(() -> aClaim(1, "999", "999-R01-01", "SOLD"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("seat_claims_match_id_block_id_fkey");
+    }
+
+    @Test
+    void rejectsAnUnknownClaimStatus() {
+        block214();
+
+        assertThatThrownBy(() -> aClaim(1, "214", "214-R07-12", "HELD"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("seat_claims_status_check");
+    }
 }
