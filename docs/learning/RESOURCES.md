@@ -48,6 +48,10 @@ Remove anything that turns out wrong or shallow. Missing an area? Add it under *
   `gitignore`, `gitattributes`, the index. Use for: any git question.
 - [GitHub Actions documentation](https://docs.github.com/en/actions) — workflows, caching, branch protection (TKT-102).
 
+### Design
+- [Martin Fowler — Patterns of Enterprise Application Architecture catalog](https://martinfowler.com/eaaCatalog/)
+  Domain Model and Service Layer. Use for: pure domain vs application service (TKT-104).
+
 ### Distributed-systems patterns
 - [microservices.io — Saga](https://microservices.io/patterns/data/saga.html) and
   [Transactional Outbox](https://microservices.io/patterns/data/transactional-outbox.html)
