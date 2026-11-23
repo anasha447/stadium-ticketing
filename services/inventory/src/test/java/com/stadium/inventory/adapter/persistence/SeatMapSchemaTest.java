@@ -143,6 +143,15 @@ class SeatMapSchemaTest {
     }
 
     @Test
+    void rejectsASeatIdWithAOneDigitSeat() {
+        block214();
+
+        assertThatThrownBy(() -> aClaim(1, "214", "214-R07-5", "SOLD"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("seat_claims_check");
+    }
+
+    @Test
     void rejectsAnUnknownClaimStatus() {
         block214();
 

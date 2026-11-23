@@ -31,12 +31,13 @@ CREATE TABLE seat_claims (
     order_id    UUID        NOT NULL,
     hold_id     UUID        NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-     FOREIGN KEY (match_id, block_id) REFERENCES blocks(match_id, block_id),
-        -- the Seat id names its own Block; whether Row and number fit is checked in Java
-        CHECK (seat_id ~ ('^' || block_id || '-R[0-9]{2}-[0-9]{1,2}$'))
-
+    FOREIGN KEY (match_id, block_id) REFERENCES blocks(match_id, block_id),
+    -- the Seat id names its own Block; whether Row and number fit is checked in Java
+    CHECK (seat_id ~ ('^' || block_id || '-R[0-9]{2}-[0-9]{2}$'))
 );
- CREATE UNIQUE INDEX uniq_sold_seat ON seat_claims (match_id, seat_id)
-           WHERE status = 'SOLD';
+
+-- The overselling backstop: at most one SOLD claim per Seat of a Match.
+CREATE UNIQUE INDEX uniq_sold_seat ON seat_claims (match_id, seat_id)
+    WHERE status = 'SOLD';
 
    -- Deliberately no seats table (ADR-0007) and no holds table: Holds are Redis-only (ADR-0001).
