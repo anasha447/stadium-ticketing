@@ -1,4 +1,5 @@
 package com.stadium.inventory.domain;
 
-public class level {
+public enum Level {
+    LOWER, CLUB, UPPER
 }

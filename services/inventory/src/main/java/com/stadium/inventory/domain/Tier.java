@@ -1,4 +1,6 @@
 package com.stadium.inventory.domain;
 
-public class Tier {
+public enum Tier {
+    CLUB_PREMIUM, VIP_1, VIP_2, STANDARD
 }
+
