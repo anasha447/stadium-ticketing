@@ -55,6 +55,10 @@ _Avoid_: class, price band, category
 A numbered group of Seats on one Level, with aisles on both sides (101–140, 201–240, 301–340).
 _Avoid_: section, zone, area, segment
 
+**Side**:
+The side of the pitch a Block looks onto: west, north, east or south. West and east run along the touchlines; north and south are behind the goals.
+_Avoid_: stand, end, direction
+
 **Row**:
 One line of Seats inside a Block. Seats are adjacent only inside one Row.
 _Avoid_: line

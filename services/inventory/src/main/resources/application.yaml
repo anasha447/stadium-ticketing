@@ -5,7 +5,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/inventory_db
     username: stadium
     password: stadium
-
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
 server:
   port: 8081
 
