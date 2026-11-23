@@ -1,8 +1,7 @@
 package com.stadium.inventory.adapter.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.stadium.inventory.TestcontainersConfiguration;
 import com.stadium.inventory.adapter.persistence.repository.BlockRepository;
 import com.stadium.inventory.adapter.persistence.repository.SeatClaimRepository;
