@@ -1,6 +1,7 @@
 package com.stadium.inventory.adapter.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.stadium.inventory.TestcontainersConfiguration;
 import com.stadium.inventory.adapter.persistence.repository.BlockRepository;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
@@ -70,5 +72,28 @@ class SeatMapPersistenceTest {
         seatMaps.save(new SeatMapEntity(1L, "stadium-v1", 60_560, Instant.now()));
         blocks.save(new BlockEntity(new BlockId(1L, "214"), Level.CLUB, (short) 13, Side.NORTH, Tier.VIP_2,
                 new int[] {22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25}));
+    }
+    @Test
+    void theBackstopStillRefusesASecondSoldClaimThroughJpa() {
+        block214();
+        claims.save(new SeatClaimEntity(1L, "214", "214-R07-12", SeatClaimStatus.SOLD,
+                UUID.randomUUID(), UUID.randomUUID()));
+
+        // IDENTITY id: Hibernate must INSERT now to learn the id, so the error comes from save()
+        assertThatThrownBy(() -> claims.save(new SeatClaimEntity(1L, "214", "214-R07-12",
+                SeatClaimStatus.SOLD, UUID.randomUUID(), UUID.randomUUID())))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("uniq_sold_seat");
+    }
+
+    @Test
+    void aBadBlockIsOnlyRefusedAtFlush() {
+        seatMaps.save(new SeatMapEntity(1L, "stadium-v1", 60_560, Instant.now()));
+        blocks.save(new BlockEntity(new BlockId(1L, "214"), Level.CLUB, (short) 13, Side.NORTH, Tier.VIP_2,
+                new int[] {22, 0, 23}));   // no exception: nothing has been sent yet
+
+        assertThatThrownBy(() -> blocks.flush())
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("blocks_row_seats_check");
     }
 }
