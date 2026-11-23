@@ -4,6 +4,27 @@ One short section per ticket, newest first: what I did and what I learned.
 
 ---
 
+## TKT-103 — Postgres + Seat Map schema + overselling backstop · Nov 23, 2026
+
+**What I did**
+- Ran Postgres 18 in Docker Compose (pinned image, healthcheck) and connected `inventory` to it
+- Wrote `V1__seat_map.sql` with Flyway: `seat_maps`, `blocks`, `seat_claims`, and the backstop index `uniq_sold_seat`
+- Proved every constraint with raw SQL tests on a real Postgres (Testcontainers), then mapped the tables with JPA and `ddl-auto: validate`
+- Stored the layout, not the Seats: 120 Block rows per Match instead of 60,560 Seat rows
+
+**What I learned**
+- **The database owns the truth** — Flyway creates the tables, Hibernate only checks that my classes match them. The rules hold whatever code writes the data.
+- **JPA sits on top of JDBC** — Hibernate writes the SQL, but it goes through the same driver and the same Hikari pool.
+- **Partial unique index** — unique only `WHERE status = 'SOLD'`, so a cancelled Seat can be sold again.
+- **A unique index compares text** — `214-R07-5` and `214-R07-05` are the same Seat but two values, so the CHECK must allow only one spelling.
+- **`save()` isn't the INSERT** — Hibernate waits for flush, unless Postgres gives the id. A round-trip test needs `flush()` and `clear()`, or it reads from memory.
+- **Lombok with care** — `@Getter` and a protected constructor on entities, never `@Data` or `@Setter`; `lombok.config` makes the compiler refuse them.
+- **Read the last `Caused by`** — "Failed to load ApplicationContext" says nothing. And `Errors: 19` means nothing could run (it was the antivirus blocking Testcontainers).
+- **My tests were using the wrong database** — `@ImportTestcontainers` didn't import my container bean, so they used Compose. CI went red and showed it.
+- **Never edit a migration that others ran** — the checksum changes and the app won't start. I could only fix V1 because it wasn't merged yet.
+
+---
+
 ## TKT-102 — CI on every pull request · Nov 18, 2026
 
 **What I did**

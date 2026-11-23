@@ -39,7 +39,7 @@ function renderList(lines) {
     const ordered = list[start]?.ordered;
     html += ordered ? "<ol>" : "<ul>";
     while (i < list.length && list[i].indent >= indent) {
-      if (list[i].indent > indent) { const [h, j] = build(list, i, list[i].indent); html = html.replace(/<\/li>$/, h + "</li>"); i = j; continue; }
+      if (list[i].indent > indent) { const [h, j] = build(list, i, list[i].indent); html = html.replace(/<\/li>$/, () => h + "</li>"); i = j; continue; }
       const box = list[i].text.match(/^\[( |x)\]\s+/);
       const t = box ? list[i].text.slice(box[0].length) : list[i].text;
       const pre = box ? `<input type="checkbox" disabled${box[1] === "x" ? " checked" : ""}> ` : "";
@@ -228,10 +228,12 @@ const articles = lessons.map((l) => `<article class="lesson" id="lesson-${l.id}"
 ${l.html.replace(/<h1[^>]*>.*?<\/h1>\n?/, "")}</article>`).join("\n");
 
 const template = readFileSync(join(here, "template.html"), "utf8");
+// Functions, not strings, as replacements: a string replacement treats `$'`, `$&` and
+// `` $` `` as patterns, and lesson text (a regex ending in `$'`) contains them.
 const page = template
-  .replace("/*__DATA__*/", JSON.stringify(data).replace(/</g, "\\u003c"))
-  .replace("<!--__ARTICLES__-->", articles)
-  .replace("<!--__NOTES__-->", notesHtml)
-  .replace("<!--__SPRINTS__-->", sprintsHtml);
+  .replace("/*__DATA__*/", () => JSON.stringify(data).replace(/</g, "\\u003c"))
+  .replace("<!--__ARTICLES__-->", () => articles)
+  .replace("<!--__NOTES__-->", () => notesHtml)
+  .replace("<!--__SPRINTS__-->", () => sprintsHtml);
 writeFileSync(join(here, "index.html"), page);
 console.log(`learning site: ${lessons.length} lesson(s) → ${join(here, "index.html")}`);

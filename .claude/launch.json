@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend/stadium-site", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "learning-site",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "docs/learning"],
+      "port": 8765
     }
   ]
 }

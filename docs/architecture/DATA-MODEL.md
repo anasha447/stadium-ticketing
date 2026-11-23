@@ -107,8 +107,9 @@ per side (west, north, east, south). Tier by position:
 | `LOWER` | `VIP_1` | `VIP_2` | `STANDARD` |
 | `UPPER` | `VIP_2` | `VIP_2` | `STANDARD` |
 
-**Seat id:** `<block>-R<row, 2 digits>-<seat>`, e.g. `214-R07-12`. Unique inside a
-Match, because Block numbers never repeat across Levels; across Matches the key is
+**Seat id:** `<block>-R<row, 2 digits>-<seat, 2 digits>`, e.g. `214-R07-05`. One Seat has
+exactly one spelling: the backstop compares text, so `214-R07-5` would be a second sale of
+the same Seat. Unique inside a Match, because Block numbers never repeat across Levels; across Matches the key is
 `(match_id, seat_id)`. The globally unique thing is the Ticket id.
 
 ```sql
@@ -129,7 +130,9 @@ CREATE TABLE blocks (
     tier       VARCHAR(16) NOT NULL
                CHECK (tier IN ('CLUB_PREMIUM','VIP_1','VIP_2','STANDARD')),
     row_seats  INT[]       NOT NULL              -- seats per Row, front Row first
-               CHECK (cardinality(row_seats) > 0 AND 0 < ALL (row_seats)),
+               CHECK (cardinality(row_seats) > 0
+                      AND array_position(row_seats, NULL) IS NULL   -- no Row without a number
+                      AND 0 < ALL (row_seats)),
     PRIMARY KEY (match_id, block_id),
     UNIQUE (match_id, level, position)
 );
@@ -145,7 +148,7 @@ CREATE TABLE seat_claims (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (match_id, block_id) REFERENCES blocks(match_id, block_id),
     -- the Seat id names its own Block; whether Row and number fit is checked in Java
-    CHECK (seat_id ~ ('^' || block_id || '-R[0-9]{2}-[0-9]{1,2}$'))
+    CHECK (seat_id ~ ('^' || block_id || '-R[0-9]{2}-[0-9]{2}$'))
 );
 
 -- The overselling backstop: at most one SOLD claim per Seat of a Match.

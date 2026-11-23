@@ -102,7 +102,7 @@ Rules 1–11 are for the **backend**. For anything under `frontend/`:
 - **Sprint:** 1 — "Walking Skeleton of the Seat Map" (Nov 11 – Nov 24, 2026) → [`docs/process/sprints/SPRINT-01.md`](docs/process/sprints/SPRINT-01.md)
 - **Active track:** backend. The frontend F-track (ADR-0006) is done: every ticket through F406 merged by 17 Nov 2026; what is left is in Carried forward in `docs/process/FRONTEND-TICKETS.md`. The frontend changes only after the backend is done (second table in `docs/process/FRONTEND-DEVIATIONS.md`)
 - **Re-plan:** issue #39 (16 Nov 2026) resolved D-1 to D-9 into the backend docs: 60,560 Seats, layout-not-Seats in Postgres, Block strings in Redis, new Tier names, Admission Cap, Sprints 6–8 renumbered
-- **Active ticket:** TKT-103 — Postgres + Seat Map schema + overselling backstop — next. It has no issue yet: refine it first (`/grill-with-docs` → a lean issue), then kickoff + lesson. TKT-102 (CI) merged 18 Nov 2026 in PR #44
+- **Active ticket:** TKT-104 — Seat Map Generator: 120 Blocks, 60,560 Seats, idempotent. Two lessons, one per slice: `TKT-104-1` (the stadium as pure Java), `TKT-104-2` (Base Prices from configuration + storing it once). TKT-103 is done (PR #47)
 - **CI and `main`:** the repo is **public** (TKT-102 Slice 4). Ruleset `main`: PR required, `build` check required, no force push or deletion. Every change to `main` goes through a PR with a green `build`, docs included
 - **Target:** M2 Portfolio MVP by end of Sprint 8 (Mar 2, 2027); **M3 = done** (May 11, 2027) — see ROADMAP
 - **Open decisions:** none (new decisions become ADRs via `/grill-with-docs`)
@@ -181,7 +181,7 @@ If a new term appears, add it to the glossary in the same PR.
 - Write to Postgres on the hold path (holds are Redis-only).
 - Build Redis keys inside Lua, or use keys without the `match:{<id>}:` hash tag.
 - Expose JPA entities from controllers.
-- Put `@Data` on an entity, or `EnumType.ORDINAL` anywhere.
+- Put `@Data` or `@Setter` on an entity (`lombok.config` refuses both), or `EnumType.ORDINAL` anywhere.
 - Recompute a price after a Quote exists.
 - Put the rotating QR code in a PDF.
 - Store card numbers or raw IPs.
@@ -209,4 +209,4 @@ npm test             # vitest: API client, mock layer, domain helpers
 npm run lint && npm run typecheck && npm run build
 ```
 
-`docker compose up -d` (local infrastructure) arrives with TKT-103.
+`docker compose up -d` starts the local Postgres (tests don't need it: they use Testcontainers).
